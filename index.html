@@ -1,851 +1,354 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Joyas Vocales - Juego Educativo</title>
-    <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser.min.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Noah Shop POS - Sistema Profesional</title>
+    <!-- Tailwind + Bootstrap Icons + Font Awesome + Librerías -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            -webkit-tap-highlight-color: transparent;
-        }
-        
-        body {
-            font-family: 'Comic Sans MS', 'Chalkboard SE', 'Arial Rounded MT Bold', sans-serif;
-            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            overflow: hidden;
-            padding: 10px;
-        }
-        
-        #game-container {
-            width: 100%;
-            max-width: 1200px;
-            border-radius: 20px;
-            overflow: hidden;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
-        }
-        
-        .instructions {
-            color: white;
-            text-align: center;
-            margin-top: 15px;
-            padding: 0 15px;
-            font-size: 1.1rem;
-            line-height: 1.5;
-            max-width: 800px;
-        }
-        
-        .credits {
-            color: #aaa;
-            text-align: center;
-            margin-top: 10px;
-            font-size: 0.9rem;
-            padding: 0 15px;
-        }
-        
-        @media (max-width: 768px) {
-            .instructions {
-                font-size: 1rem;
-            }
-        }
+        /* transiciones y personalización */
+        body { background: #f3f4f6; font-family: 'Inter', system-ui, -apple-system, sans-serif; }
+        .section-container { display: none; animation: fade 0.2s ease; }
+        .active-section { display: block; }
+        @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
+        .low-stock { background-color: #fee2e2 !important; color: #b91c1c !important; font-weight: bold; border-left: 4px solid #ef4444; }
+        .card-hover:hover { transform: translateY(-2px); transition: all 0.2s; box-shadow: 0 10px 20px rgba(0,0,0,0.05); }
+        .btn-modern { border-radius: 40px; padding: 8px 18px; font-weight: 500; transition: 0.2s; }
+        .invoice-watermark { position: relative; overflow: hidden; }
+        .invoice-watermark::after { content: "NOTA DE VENTA"; position: absolute; bottom: 20px; right: 20px; font-size: 60px; opacity: 0.08; font-weight: bold; pointer-events: none; transform: rotate(-15deg); white-space: pre; }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #e5e7eb; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb { background: #9ca3af; border-radius: 10px; }
+        .product-card { cursor: pointer; transition: 0.1s linear; }
+        .active-tab-btn { background: #1e3a8a !important; color: white !important; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
+        .badge-debt { background-color: #dc2626; color: white; font-size: 0.7rem; }
+        input, select, textarea { border-radius: 12px !important; }
     </style>
 </head>
-<body>
-    <div id="game-container"></div>
-    <p class="instructions">¡Ayuda a la Maestra Daniela a recuperar sus joyas vocales! Arrastra cada joya a su vocal correspondiente.</p>
-    <p class="credits">Juego educativo para niños de 4-6 años | Diseñado con Phaser 3</p>
+<body class="bg-gray-100">
 
-    <script>
-        // CONFIGURACIÓN PRINCIPAL DEL JUEGO
-        const config = {
-            type: Phaser.AUTO,
-            parent: 'game-container',
-            width: 1200,
-            height: 800,
-            backgroundColor: '#1a1a2e',
-            scale: {
-                mode: Phaser.Scale.FIT,
-                autoCenter: Phaser.Scale.CENTER_BOTH
-            },
-            scene: {
-                preload: preload,
-                create: create,
-                update: update
-            },
-            physics: {
-                default: 'arcade',
-                arcade: {
-                    gravity: { y: 0 },
-                    debug: false
-                }
-            }
-        };
+<div class="container-fluid px-3 px-lg-4 py-3 max-w-7xl mx-auto">
+    <!-- HEADER SUPERIOR con nombre y botones principales -->
+    <div class="bg-white rounded-2xl shadow-md p-3 mb-4 flex flex-wrap items-center justify-between gap-2 sticky top-2 z-20">
+        <div class="flex items-center gap-3">
+            <i class="fas fa-store text-3xl text-blue-800"></i>
+            <div>
+                <h1 class="text-xl font-extrabold text-gray-800">Noah Shop</h1>
+                <p class="text-xs text-gray-500">📍 Valencia, Edo Carabobo | Tel: 0412-8517800</p>
+            </div>
+        </div>
+        <div class="flex flex-wrap gap-2 justify-end" id="navButtonsContainer">
+            <!-- Botones generados dinamicamente pero los pongo manual para robustez -->
+        </div>
+    </div>
 
-        // VARIABLES GLOBALES DEL JUEGO
-        let game;
-        let teacher;
-        let jewels = [];
-        let vowelTargets = [];
-        let placedJewels = 0;
-        let totalJewels = 5;
-        let vowels = ['A', 'E', 'I', 'O', 'U'];
-        let jewelColors = [0xFF6B6B, 0x4ECDC4, 0x45B7D1, 0x96CEB4, 0xFFEAA7];
-        let dragStartPosition = { x: 0, y: 0 };
-        let gameCompleted = false;
+    <!-- CONTENEDOR PRINCIPAL DE MODULOS -->
+    <div id="appRoot">
+        <!-- Ventas (principal) -->
+        <div id="section-ventas" class="section-container active-section">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                <!-- Panel izquierdo: productos y buscador -->
+                <div class="lg:col-span-2 bg-white rounded-2xl shadow p-3">
+                    <div class="flex justify-between items-center mb-3 flex-wrap gap-2">
+                        <h2 class="text-xl font-bold"><i class="fas fa-tag text-blue-600"></i> Productos</h2>
+                        <div class="relative w-64">
+                            <i class="fas fa-search absolute left-3 top-3 text-gray-400"></i>
+                            <input type="text" id="searchProductInput" placeholder="Buscar producto..." class="pl-9 pr-3 py-2 border rounded-xl w-full">
+                        </div>
+                    </div>
+                    <div id="productsGrid" class="grid grid-cols-2 md:grid-cols-3 gap-3 max-h-[65vh] overflow-y-auto p-1"></div>
+                </div>
+                <!-- Panel derecho: carrito / nota de venta -->
+                <div class="bg-white rounded-2xl shadow p-3 flex flex-col h-fit sticky top-24">
+                    <div class="flex justify-between items-center border-b pb-2">
+                        <h3 class="font-bold text-lg"><i class="fas fa-shopping-cart"></i> Nota de Venta</h3>
+                        <button id="clearCartBtn" class="text-red-500 text-sm"><i class="fas fa-trash-alt"></i> Anular venta</button>
+                    </div>
+                    <div id="cartItemsList" class="max-h-80 overflow-y-auto my-3 space-y-2"></div>
+                    <div class="border-t pt-2 mt-1">
+                        <div class="flex justify-between font-bold"><span>Total USD:</span><span id="cartTotal">0.00</span></div>
+                        <input type="text" id="clientName" placeholder="Nombre del cliente" class="w-full border p-2 rounded-lg mt-2 text-sm">
+                        <input type="text" id="clientPhone" placeholder="WhatsApp (ej: 0412-1234567)" class="w-full border p-2 rounded-lg mt-2 text-sm">
+                        <div class="flex gap-2 mt-2">
+                            <input type="text" id="clientAddress" placeholder="Dirección" class="w-full border p-2 rounded-lg text-sm">
+                            <select id="addressZone" class="border p-2 rounded-lg text-sm w-36"><option value="">Zona</option></select>
+                        </div>
+                        <input type="text" id="sellerName" placeholder="Nombre vendedor" class="w-full border p-2 rounded-lg mt-2 text-sm">
+                        <div class="flex gap-2 mt-2">
+                            <input type="text" id="invoiceNumber" placeholder="Factura #" class="w-1/2 border p-2 rounded-lg text-sm">
+                            <select id="paymentMethod" class="w-1/2 border p-2 rounded-lg text-sm">
+                                <option>Efectivo</option><option>Pago Móvil</option><option>Divisas</option><option>Biopago</option>
+                                <option>Transferencia</option><option>Fiado Credito</option><option>Binance</option><option>Apartado</option>
+                            </select>
+                        </div>
+                        <button id="confirmSaleBtn" class="bg-green-600 hover:bg-green-700 text-white w-full py-2 rounded-xl mt-3 font-semibold"><i class="fab fa-whatsapp"></i> Concretar Venta y Enviar WhatsApp</button>
+                    </div>
+                </div>
+            </div>
+        </div>
 
-        // SONIDOS (se usarán placeholders si no se cargan)
-        let clickSound, correctSound, errorSound;
+        <!-- Almacen -->
+        <div id="section-almacen" class="section-container"><div class="bg-white p-4 rounded-2xl shadow"><h2 class="text-2xl font-bold mb-3"><i class="fas fa-warehouse"></i> Gestión de Almacén</h2><button id="addProductBtn" class="bg-blue-600 text-white px-4 py-2 rounded-xl mb-3"><i class="fas fa-plus"></i> Nuevo Producto</button><div id="almacenProductsList" class="overflow-x-auto"></div></div></div>
+        <!-- Inventario (movimientos historicos + password) -->
+        <div id="section-inventario" class="section-container"><div class="bg-white p-4 rounded-2xl shadow"><h2 class="text-2xl font-bold mb-3"><i class="fas fa-chart-line"></i> Historial Ingresos/Salidas</h2><input type="text" id="filterMovements" placeholder="Filtrar por producto..." class="border p-2 rounded mb-2 w-full"><div id="movementsTable" class="overflow-x-auto"></div><button id="editMovementsBtn" class="bg-amber-500 mt-3 text-white px-4 py-2 rounded">Modificar movimiento (requiere contraseña)</button></div></div>
+        <!-- Fiados -->
+        <div id="section-fiados" class="section-container"><div class="bg-white p-4 rounded-2xl shadow"><h2 class="text-2xl font-bold"><i class="fas fa-hand-holding-usd"></i> Cartera de Fiados</h2><button id="downloadFiadosExcel" class="bg-green-700 text-white my-2 px-4 py-2 rounded">📎 Descargar Excel Fiados</button><div id="fiadosList" class="overflow-x-auto"></div></div></div>
+        <!-- Cierre / Reportes -->
+        <div id="section-reportes" class="section-container"><div class="bg-white p-4 rounded-2xl shadow"><h2 class="text-2xl font-bold">Cierres y Reportes</h2><div class="flex gap-2 my-2"><input type="date" id="reportStartDate"><input type="date" id="reportEndDate"><button id="filterSalesReport" class="bg-gray-700 text-white px-3 rounded">Filtrar</button><button id="downloadSalesExcel" class="bg-blue-600 text-white px-3 rounded">📊 Excel Ventas</button><button id="downloadInventoryTodayExcel" class="bg-purple-600 text-white px-3 rounded">📦 Inventario Hoy</button></div><canvas id="salesChart" width="400" height="200"></canvas><div id="salesReportTable" class="overflow-auto max-h-96 mt-4"></div></div></div>
+        <!-- Clientes -->
+        <div id="section-clientes" class="section-container"><div class="bg-white p-4 rounded-2xl shadow"><h2 class="text-2xl font-bold"><i class="fas fa-users"></i> Base de Clientes</h2><input type="text" id="filterClients" placeholder="Filtrar por nombre..." class="border p-2 rounded w-full mb-2"><div id="clientsListContainer" class="overflow-auto max-h-96"></div></div></div>
+        <!-- Proveedores -->
+        <div id="section-proveedores" class="section-container"><div class="bg-white p-4 rounded-2xl shadow"><h2 class="text-2xl font-bold">Proveedores</h2><button id="addSupplierBtn" class="bg-indigo-600 text-white px-3 py-1 rounded mb-2">+ Nuevo Proveedor</button><div id="suppliersContainer"></div></div></div>
+        <!-- Encargos -->
+        <div id="section-encargos" class="section-container"><div class="bg-white p-4 rounded-2xl shadow"><h2 class="text-2xl font-bold">📦 Encargos a Clientes</h2><button id="newEncargoBtn" class="bg-cyan-600 text-white px-3 py-1 rounded mb-2">+ Nuevo Encargo</button><div id="encargosList"></div></div></div>
+        <!-- Apartados -->
+        <div id="section-apartados" class="section-container"><div class="bg-white p-4 rounded-2xl shadow"><h2 class="text-2xl font-bold">🛍️ Apartados (Pre-compra)</h2><div id="apartadosList"></div></div></div>
+    </div>
+    <footer class="text-center text-gray-500 text-xs mt-6 border-t pt-4">✨ Desarrollado por Nexus Marketing 04244525765 - Sistema POS Profesional Noah Shop ✨</footer>
+</div>
 
-        // INICIAR EL JUEGO
-        game = new Phaser.Game(config);
+<script>
+    // *************** DATA MODELS ***************
+    let products = JSON.parse(localStorage.getItem('noah_products')) || [];
+    let sales = JSON.parse(localStorage.getItem('noah_sales')) || [];
+    let clients = JSON.parse(localStorage.getItem('noah_clients')) || [];
+    let fiados = JSON.parse(localStorage.getItem('noah_fiados')) || [];  // cada fiado ligado a saleId, deudaPendiente, pagos
+    let movements = JSON.parse(localStorage.getItem('noah_movements')) || [];
+    let suppliers = JSON.parse(localStorage.getItem('noah_suppliers')) || [];
+    let encargos = JSON.parse(localStorage.getItem('noah_encargos')) || [];
+    let apartados = JSON.parse(localStorage.getItem('noah_apartados')) || [];
+    let nextProductCode = parseInt(localStorage.getItem('nextProductCode')) || 1000;
+    let nextInvoiceSeq = parseInt(localStorage.getItem('nextInvoiceSeq')) || 1;
 
-        // ================== FUNCIONES PRINCIPALES ==================
+    function saveAll(){
+        localStorage.setItem('noah_products', JSON.stringify(products));
+        localStorage.setItem('noah_sales', JSON.stringify(sales));
+        localStorage.setItem('noah_clients', JSON.stringify(clients));
+        localStorage.setItem('noah_fiados', JSON.stringify(fiados));
+        localStorage.setItem('noah_movements', JSON.stringify(movements));
+        localStorage.setItem('noah_suppliers', JSON.stringify(suppliers));
+        localStorage.setItem('noah_encargos', JSON.stringify(encargos));
+        localStorage.setItem('noah_apartados', JSON.stringify(apartados));
+        localStorage.setItem('nextProductCode', nextProductCode);
+        localStorage.setItem('nextInvoiceSeq', nextInvoiceSeq);
+    }
 
-        function preload() {
-            console.log("Cargando recursos del juego...");
-            
-            // Cargar imágenes desde archivos locales
-            this.load.image('mine_background', 'fondo de mina.jpg');
-            this.load.image('teacher', 'maestra.png');
-            this.load.image('jewel_base', 'joya.png');
-            
-            // Mostrar barra de carga
-            createLoadingScreen(this);
-            
-            // Manejar errores de carga
-            this.load.on('loaderror', (file) => {
-                console.warn(`Error cargando: ${file.key}`);
-            });
-            
-            this.load.on('progress', (value) => {
-                updateLoadingBar(this, value);
-            });
+    function addMovement(productId, type, quantity, reason, user="sistema"){
+        movements.unshift({ id: Date.now(), productId, type, quantity, date: new Date().toLocaleString(), reason, user });
+        saveAll();
+    }
+
+    // Helper: actualizar stock producto
+    function updateProductStock(prodId, delta){
+        let p = products.find(p=>p.id==prodId);
+        if(p){ p.stock += delta; if(p.stock<0)p.stock=0; saveAll(); }
+    }
+
+    // inicializar categorías, datos demo
+    function initDemo(){
+        if(products.length===0){
+            products = [
+                { id:1, code:"P1001", name:"Jeans Clásico", price:35, stock:12, category:"Pantalones", image:"https://picsum.photos/id/20/80/80", createdDate:new Date().toISOString() },
+                { id:2, code:"P1002", name:"Camisa Polo", price:25, stock:5, category:"Camisas", image:"https://picsum.photos/id/30/80/80", createdDate:new Date().toISOString() },
+                { id:3, code:"P1003", name:"Gorra Deportiva", price:15, stock:6, category:"Accesorios", image:"https://picsum.photos/id/1/80/80", createdDate:new Date().toISOString() }
+            ];
+            nextProductCode=1004;
+            saveAll();
         }
+        if(clients.length===0) clients.push({ id:1, name:"Cliente Ejemplo", phone:"04121234567", address:"Centro", zone:"Centro", debtTotal:0, history:[] });
+        if(suppliers.length===0) suppliers.push({ id:1, name:"Distribuidora Textil", contact:"0412-000111", debt:0, purchases:[] });
+        saveAll();
+    }
+    initDemo();
 
-        function create() {
-            console.log("Creando escena del juego...");
-            
-            // Inicializar sonidos (placeholders si no se cargaron)
-            initSounds(this);
-            
-            // Crear fondo
-            createBackground(this);
-            
-            // Crear maestra Daniela
-            createTeacher(this);
-            
-            // Crear globo de diálogo
-            createSpeechBubble(this);
-            
-            // Crear contenedores de vocales
-            createVowelTargets(this);
-            
-            // Crear joyas
-            createJewels(this);
-            
-            // Configurar interacción
-            setupDragAndDrop(this);
-            
-            // Configurar eventos de redimensionamiento
-            this.scale.on('resize', resize, this);
+    // Helper para actualizar tablas, renderizado general
+    let currentSection = "ventas";
+    let cart = []; // {productId, name, qty, price, subtotal}
+
+    // Funciones de UI: renderizar productos, carrito, etc
+    function renderProductsGrid(filter=""){
+        let container = document.getElementById("productsGrid");
+        if(!container) return;
+        let filtered = products.filter(p=>p.name.toLowerCase().includes(filter.toLowerCase()));
+        container.innerHTML = filtered.map(p=>`<div class="product-card border rounded-xl p-2 ${p.stock<=6 ? 'low-stock' : ''}" data-id="${p.id}">
+            <img src="${p.image || 'https://picsum.photos/id/42/80/80'}" class="w-full h-24 object-cover rounded-lg mb-2">
+            <div class="font-bold">${p.name}</div><div class="text-xs">${p.code}</div><div class="text-sm">Stock: ${p.stock} | $${p.price}</div>
+            <div class="flex gap-1 mt-2"><input type="number" id="qty-${p.id}" min="1" value="1" class="w-16 border rounded text-center"><button class="bg-blue-500 text-white px-2 py-1 rounded add-to-cart-btn" data-id="${p.id}" data-name="${p.name}" data-price="${p.price}">Agregar</button></div>
+        </div>`).join("");
+        document.querySelectorAll('.add-to-cart-btn').forEach(btn=>btn.addEventListener('click',(e)=>{ let id=parseInt(btn.dataset.id); let qty=parseInt(document.getElementById(`qty-${id}`).value); addToCart(id,qty); }));
+        document.querySelectorAll('.product-card').forEach(card=>card.addEventListener('click',(e)=>{ if(e.target.tagName!=='BUTTON' && e.target.parentElement?.tagName!=='BUTTON') showProductHistory(parseInt(card.dataset.id)); }));
+    }
+    function addToCart(productId, qty){
+        let prod = products.find(p=>p.id==productId);
+        if(!prod || qty<=0) return;
+        if(qty > prod.stock){ Swal.fire("Stock insuficiente",`Solo quedan ${prod.stock}`,"warning"); return; }
+        let existing = cart.find(i=>i.productId==productId);
+        if(existing){ existing.qty += qty; existing.subtotal = existing.qty * existing.price; }
+        else { cart.push({ productId, name:prod.name, qty, price:prod.price, subtotal:prod.price*qty }); }
+        renderCart();
+    }
+    function renderCart(){
+        let container = document.getElementById("cartItemsList");
+        if(!container) return;
+        if(cart.length===0){ container.innerHTML="<div class='text-gray-400 text-center'>Agrega productos</div>"; document.getElementById("cartTotal").innerText="0.00"; return; }
+        let html="";
+        cart.forEach((item,idx)=>{
+            html+=`<div class="flex justify-between items-center border-b pb-1"><div><span class="font-medium">${item.name}</span><div class="text-xs">Cant: <input type="number" min="1" class="w-12 border rounded cart-qty" data-idx="${idx}" value="${item.qty}"> | $<input type="number" step="0.01" class="w-16 border rounded cart-price" data-idx="${idx}" value="${item.price}"></div></div><div>$${(item.qty*item.price).toFixed(2)} <button class="text-red-500 remove-item" data-idx="${idx}"><i class="fas fa-trash"></i></button></div></div>`;
+        });
+        container.innerHTML=html;
+        let total=cart.reduce((a,b)=>a+(b.qty*b.price),0);
+        document.getElementById("cartTotal").innerText=total.toFixed(2);
+        document.querySelectorAll('.cart-qty').forEach(inp=>inp.addEventListener('change',(e)=>{ let idx=parseInt(inp.dataset.idx); let newQty=parseInt(inp.value); if(newQty>0){ cart[idx].qty=newQty; cart[idx].subtotal=cart[idx].qty*cart[idx].price; renderCart(); } else { cart.splice(idx,1); renderCart(); } }));
+        document.querySelectorAll('.cart-price').forEach(inp=>inp.addEventListener('change',(e)=>{ let idx=parseInt(inp.dataset.idx); cart[idx].price=parseFloat(inp.value); cart[idx].subtotal=cart[idx].qty*cart[idx].price; renderCart(); }));
+        document.querySelectorAll('.remove-item').forEach(btn=>btn.addEventListener('click',(e)=>{ let idx=parseInt(btn.dataset.idx); cart.splice(idx,1); renderCart(); }));
+    }
+    function clearCart(){ cart=[]; renderCart(); }
+
+    async function confirmSale(){
+        if(cart.length===0){ Swal.fire("Error","Carrito vacío","error"); return; }
+        let clientName=document.getElementById("clientName").value.trim(); if(!clientName){ Swal.fire("Nombre requerido"); return; }
+        let clientPhone=document.getElementById("clientPhone").value.trim();
+        let address=document.getElementById("clientAddress").value;
+        let zone=document.getElementById("addressZone").value;
+        let seller=document.getElementById("sellerName").value.trim()||"Vendedor";
+        let paymentMethod=document.getElementById("paymentMethod").value;
+        let invoiceNumber=document.getElementById("invoiceNumber").value.trim();
+        if(!invoiceNumber){ invoiceNumber = `NF-${nextInvoiceSeq}`; document.getElementById("invoiceNumber").value=invoiceNumber; }
+        let existingSale = sales.find(s=>s.invoiceNo===invoiceNumber);
+        if(existingSale){ Swal.fire("Error","Número de factura repetido, edítelo","error"); return; }
+        let subtotal=cart.reduce((a,b)=>a+(b.qty*b.price),0);
+        let saleObj = { id:Date.now(), invoiceNo:invoiceNumber, date:new Date().toISOString(), clientName, clientPhone, address, zone, sellerName:seller, paymentMethod, items:cart.map(i=>({productId:i.productId, name:i.name, qty:i.qty, price:i.price, total:i.qty*i.price})), total:subtotal, status:"completada" };
+        // descontar stock
+        for(let item of cart){
+            let prod = products.find(p=>p.id==item.productId);
+            if(prod.stock < item.qty){ Swal.fire("Stock insuficiente",`${prod.name} no tiene suficiente`,"error"); return; }
+            prod.stock -= item.qty;
+            addMovement(item.productId, "salida", item.qty, `Venta ${invoiceNumber}`, seller);
         }
-
-        function update() {
-            // Lógica de actualización (si es necesaria)
+        sales.push(saleObj);
+        // clientes
+        let existingClient = clients.find(c=>c.name.toLowerCase()===clientName.toLowerCase());
+        if(!existingClient){ let newId=Date.now(); clients.push({ id:newId, name:clientName, phone:clientPhone, address, zone, debtTotal:0, history:[] }); existingClient=clients[clients.length-1]; }
+        existingClient.history.push({ date:saleObj.date, invoice:saleObj.invoiceNo, total:subtotal, items:saleObj.items.length });
+        if(paymentMethod === "Fiado Credito"){
+            let deudaPendiente = subtotal;
+            fiados.push({ id:Date.now(), clientId:existingClient.id, clientName, saleId:saleObj.id, totalDebt:deudaPendiente, paidAmount:0, remaining:deudaPendiente, status:"pendiente", itemsDetail:saleObj.items, date:saleObj.date });
+            existingClient.debtTotal += deudaPendiente;
         }
-
-        // ================== FUNCIONES AUXILIARES ==================
-
-        function createLoadingScreen(scene) {
-            const width = scene.cameras.main.width;
-            const height = scene.cameras.main.height;
-            
-            // Fondo de carga
-            const bg = scene.add.graphics();
-            bg.fillStyle(0x1a1a2e, 1);
-            bg.fillRect(0, 0, width, height);
-            
-            // Título
-            const title = scene.add.text(width / 2, height / 3, 'Joyas Vocales', {
-                fontFamily: 'Comic Sans MS',
-                fontSize: '48px',
-                fontWeight: 'bold',
-                color: '#ffffff',
-                stroke: '#4a148c',
-                strokeThickness: 6
-            });
-            title.setOrigin(0.5);
-            
-            // Barra de carga (fondo)
-            const barWidth = width * 0.6;
-            const barHeight = 30;
-            const barX = width / 2 - barWidth / 2;
-            const barY = height / 2;
-            
-            const barBg = scene.add.graphics();
-            barBg.fillStyle(0x333366, 1);
-            barBg.fillRect(barX, barY, barWidth, barHeight);
-            barBg.lineStyle(4, 0xffffff, 1);
-            barBg.strokeRect(barX, barY, barWidth, barHeight);
-            
-            // Barra de carga (relleno)
-            const progressBar = scene.add.graphics();
-            
-            // Texto de carga
-            const loadingText = scene.add.text(width / 2, barY + 50, 'Cargando... 0%', {
-                fontFamily: 'Comic Sans MS',
-                fontSize: '24px',
-                color: '#ffffff'
-            });
-            loadingText.setOrigin(0.5);
-            
-            // Guardar referencias para actualización
-            scene.loadingProgressBar = progressBar;
-            scene.loadingText = loadingText;
-            scene.loadingBarX = barX;
-            scene.loadingBarY = barY;
-            scene.loadingBarWidth = barWidth;
+        if(paymentMethod === "Apartado"){
+            apartados.push({ id:Date.now(), clientName, items:cart.map(i=>({name:i.name, qty:i.qty})), total:subtotal, date:saleObj.date, status:"pendiente" });
         }
+        saveAll();
+        // generar imagen nota
+        let notaHtml = generateInvoiceHTML(saleObj);
+        let tempDiv = document.createElement("div"); tempDiv.innerHTML=notaHtml; tempDiv.style.position='fixed'; tempDiv.style.left='-9999px'; tempDiv.style.width='500px'; document.body.appendChild(tempDiv);
+        let canvas = await html2canvas(tempDiv, {scale:2});
+        let imgData = canvas.toDataURL('image/png');
+        document.body.removeChild(tempDiv);
+        if(clientPhone && clientPhone.trim()!=""){
+            let whatsappUrl = `https://wa.me/${clientPhone.replace(/[^0-9]/g, '')}?text=${encodeURIComponent("Noah Shop *NOTA DE VENTA* adjunta imagen")}`;
+            window.open(whatsappUrl, '_blank');
+            await Swal.fire("Venta concretada","Nota generada, se abrirá WhatsApp para enviar la imagen","success");
+        } else { await Swal.fire("Éxito","Venta registrada sin envío de WhatsApp","success"); }
+        clearCart();
+        document.getElementById("clientName").value=""; document.getElementById("clientPhone").value=""; document.getElementById("sellerName").value="";
+        document.getElementById("invoiceNumber").value = `NF-${++nextInvoiceSeq}`; saveAll();
+        renderProductsGrid(document.getElementById("searchProductInput")?.value||"");
+        renderAllModules();
+    }
 
-        function updateLoadingBar(scene, value) {
-            if (!scene.loadingProgressBar) return;
-            
-            scene.loadingProgressBar.clear();
-            scene.loadingProgressBar.fillStyle(0x6a11cb, 1);
-            
-            const fillWidth = scene.loadingBarWidth * value;
-            scene.loadingProgressBar.fillRect(
-                scene.loadingBarX + 2, 
-                scene.loadingBarY + 2, 
-                fillWidth - 4, 
-                26
-            );
-            
-            if (scene.loadingText) {
-                scene.loadingText.setText(`Cargando... ${Math.floor(value * 100)}%`);
-            }
-        }
+    function generateInvoiceHTML(sale){
+        return `<div class="p-4 bg-white rounded-xl shadow-lg w-96 invoice-watermark" style="font-family:Arial"><div class="text-center border-b pb-2"><img src="https://picsum.photos/id/20/50/50" class="mx-auto w-12 rounded-full"><h2 class="font-bold">Noah Shop</h2><p class="text-xs">Ropa al detal y al mayor</p><p class="text-xs">Valencia Edo Carabobo | 0412-8517800</p></div><div class="text-xs mt-2">Factura: ${sale.invoiceNo} | Fecha: ${new Date(sale.date).toLocaleString()}<br>Cliente: ${sale.clientName} | Vendedor: ${sale.sellerName}<br>Dirección: ${sale.address||'N/A'}</div><table class="w-full text-xs mt-2 border"><thead><tr><th>Producto</th><th>Cant</th><th>Precio</th><th>Total</th></tr></thead><tbody>${sale.items.map(i=>`<tr><td>${i.name}</td><td>${i.qty}</td><td>$${i.price}</td><td>$${i.total}</td></tr>`).join('')}</tbody></table><div class="text-right font-bold mt-2">TOTAL: $${sale.total}</div><div class="text-center text-[10px] mt-2">¡Gracias por su compra! | Método: ${sale.paymentMethod}</div></div>`;
+    }
+    function showProductHistory(productId){
+        let prod = products.find(p=>p.id==productId);
+        let relatedSales = sales.filter(s=>s.items.some(it=>it.productId==productId));
+        let detail = relatedSales.map(s=>`${s.date.slice(0,10)} Cliente:${s.clientName} Cant:${s.items.find(i=>i.productId==productId)?.qty} Total:$${s.total}`).join("\n")||"Sin ventas";
+        Swal.fire({ title:`Historial: ${prod?.name}`, text:detail, icon:"info" });
+    }
 
-        function initSounds(scene) {
-            // Crear placeholders para sonidos (se pueden cargar archivos reales si están disponibles)
-            clickSound = {
-                play: () => console.log("Sonido de click")
-            };
-            correctSound = {
-                play: () => console.log("Sonido correcto")
-            };
-            errorSound = {
-                play: () => console.log("Sonido de error")
-            };
-        }
+    function renderAlmacen(){
+        let html=`<table class="table table-bordered"><thead><tr><th>Código</th><th>Imagen</th><th>Nombre</th><th>Categoría</th><th>Precio $</th><th>Stock</th><th>Acciones</th></tr></thead><tbody>${products.map(p=>`<tr><td>${p.code}</td><td><img src="${p.image||'https://picsum.photos/id/1/40/40'}" width="40"></td><td>${p.name}</td><td>${p.category}</td><td>${p.price}</td><td class="${p.stock<=6?'text-red-600 font-bold':''}">${p.stock}</td><td><button class="btn btn-sm btn-warning editStockBtn" data-id="${p.id}"><i class="fas fa-edit"></i> Stock</button> <button class="btn btn-sm btn-danger delProductBtn" data-id="${p.id}">Eliminar</button></td></tr>`).join('')}</tbody></table>`;
+        document.getElementById("almacenProductsList").innerHTML=html;
+        document.querySelectorAll(".editStockBtn").forEach(btn=>btn.addEventListener("click",async()=>{ let id=parseInt(btn.dataset.id); let newStock=parseInt((await Swal.fire({input:"number",title:"Ajustar stock",inputValue:products.find(p=>p.id==id).stock})).value); if(!isNaN(newStock)){ let prod=products.find(p=>p.id==id); let diff=newStock-prod.stock; prod.stock=newStock; addMovement(id,diff>0?"ingreso":"salida",Math.abs(diff),"Ajuste manual","admin"); saveAll(); renderAlmacen(); renderProductsGrid(); } }));
+    }
 
-        function createBackground(scene) {
-            const width = scene.cameras.main.width;
-            const height = scene.cameras.main.height;
-            
-            try {
-                // Intentar cargar la imagen de fondo
-                const bg = scene.add.image(0, 0, 'mine_background');
-                bg.setOrigin(0, 0);
-                bg.setDisplaySize(width, height);
-                console.log("Fondo cargado correctamente");
-            } catch (error) {
-                console.log("Error cargando fondo, usando gráfico de respaldo");
-                // Crear fondo de respaldo con gráficos
-                const bg = scene.add.graphics();
-                
-                // Gradiente para el fondo
-                bg.fillStyle(0x2c3e50, 1);
-                bg.fillRect(0, 0, width, height);
-                
-                // Añadir textura de mina
-                bg.fillStyle(0x34495e, 0.6);
-                for (let i = 0; i < 30; i++) {
-                    const x = Phaser.Math.Between(0, width);
-                    const y = Phaser.Math.Between(0, height);
-                    const size = Phaser.Math.Between(20, 60);
-                    bg.fillCircle(x, y, size);
-                }
-                
-                // Suelo de la mina
-                bg.fillStyle(0x5D4037, 1);
-                bg.fillRect(0, height - 100, width, 100);
-                
-                // Detalles del suelo
-                bg.fillStyle(0x3E2723, 1);
-                for (let i = 0; i < width / 60; i++) {
-                    bg.fillRect(i * 60, height - 100, 50, 20);
-                }
-            }
-        }
+    function renderInventoryMovements(){
+        let filter=document.getElementById("filterMovements")?.value.toLowerCase()||"";
+        let filtered=movements.filter(m=> products.find(p=>p.id==m.productId)?.name.toLowerCase().includes(filter)||false);
+        document.getElementById("movementsTable").innerHTML=`<table class="table"><thead><tr><th>Fecha</th><th>Producto</th><th>Tipo</th><th>Cantidad</th><th>Razón</th></tr></thead><tbody>${filtered.map(m=>{ let p=products.find(p=>p.id==m.productId); return `<tr><td>${m.date}</td><td>${p?.name||'desconocido'}</td><td>${m.type}</td><td>${m.quantity}</td><td>${m.reason}</td></tr>`;}).join('')}</tbody></table>`;
+    }
 
-        function createTeacher(scene) {
-            const width = scene.cameras.main.width;
-            const height = scene.cameras.main.height;
-            
-            try {
-                // Intentar cargar la imagen de la maestra
-                teacher = scene.add.image(width * 0.15, height * 0.8, 'teacher');
-                teacher.setScale(0.7);
-                teacher.setOrigin(0.5, 1);
-                console.log("Maestra cargada correctamente");
-            } catch (error) {
-                console.log("Error cargando maestra, usando gráfico de respaldo");
-                // Crear maestra de respaldo con gráficos
-                teacher = scene.add.graphics();
-                const x = width * 0.15;
-                const y = height * 0.8;
-                
-                // Cuerpo (vestido)
-                teacher.fillStyle(0x6A1B9A, 1);
-                teacher.fillEllipse(x, y - 40, 50, 70);
-                
-                // Cabeza
-                teacher.fillStyle(0xFFCCBC, 1);
-                teacher.fillCircle(x, y - 120, 25);
-                
-                // Ojos
-                teacher.fillStyle(0x000000, 1);
-                teacher.fillCircle(x - 8, y - 125, 4);
-                teacher.fillCircle(x + 8, y - 125, 4);
-                
-                // Sonrisa
-                teacher.lineStyle(3, 0x000000, 1);
-                teacher.beginPath();
-                teacher.arc(x, y - 115, 12, 0.2, Math.PI - 0.2, false);
-                teacher.strokePath();
-            }
-            
-            // Animación sutil
-            scene.tweens.add({
-                targets: teacher,
-                y: teacher.y - 5,
-                duration: 1500,
-                ease: 'Sine.easeInOut',
-                yoyo: true,
-                repeat: -1
-            });
-        }
+    function renderFiados(){
+        let grouped={};
+        fiados.forEach(f=>{ if(!grouped[f.clientName]) grouped[f.clientName]={deuda:0, id:f.id, clientId:f.clientId, items:[]}; grouped[f.clientName].deuda+=f.remaining; });
+        let html=`<table class="table"><thead><tr><th>Cliente</th><th>Deuda USD</th><th>Acciones</th></tr></thead><tbody>${Object.entries(grouped).map(([name,data])=>`<tr><td>${name}</td><td class="text-red-600 font-bold">$${data.deuda.toFixed(2)}</td><td><button class="btn btn-sm btn-primary payDebtBtn" data-name="${name}">Pagar parcial</button></td></tr>`).join('')}</tbody></table>`;
+        document.getElementById("fiadosList").innerHTML=html;
+        document.querySelectorAll(".payDebtBtn").forEach(btn=>btn.addEventListener("click",async()=>{ let cname=btn.dataset.name; let amount=parseFloat((await Swal.fire({input:"number",title:"Monto a pagar $"})).value); if(amount>0){ let debts=fiados.filter(f=>f.clientName===cname && f.remaining>0); let remaining=amount; for(let d of debts){ if(remaining<=0)break; let pay=Math.min(remaining,d.remaining); d.remaining-=pay; d.paidAmount+=pay; remaining-=pay; } saveAll(); renderFiados(); Swal.fire("Pago registrado"); } }));
+    }
 
-        function createSpeechBubble(scene) {
-            const width = scene.cameras.main.width;
-            const height = scene.cameras.main.height;
-            
-            const bubbleX = width * 0.15 + 180;
-            const bubbleY = height * 0.5;
-            
-            // Globo de diálogo
-            const bubble = scene.add.graphics();
-            bubble.fillStyle(0xFFFFFF, 1);
-            bubble.fillRoundedRect(bubbleX - 180, bubbleY - 60, 360, 80, 20);
-            bubble.lineStyle(4, 0x5D4037, 1);
-            bubble.strokeRoundedRect(bubbleX - 180, bubbleY - 60, 360, 80, 20);
-            
-            // Punta del globo
-            bubble.fillStyle(0xFFFFFF, 1);
-            bubble.beginPath();
-            bubble.moveTo(bubbleX - 100, bubbleY + 20);
-            bubble.lineTo(bubbleX - 160, bubbleY + 50);
-            bubble.lineTo(bubbleX - 40, bubbleY + 20);
-            bubble.closePath();
-            bubble.fillPath();
-            bubble.strokePath();
-            
-            // Texto del globo
-            const speechText = scene.add.text(bubbleX, bubbleY - 20, 
-                '¡Hola! Ayúdame a organizar\nmis joyas vocales, por favor', {
-                fontFamily: 'Comic Sans MS',
-                fontSize: '22px',
-                color: '#000000',
-                align: 'center',
-                fontWeight: 'bold',
-                lineSpacing: 8
-            });
-            speechText.setOrigin(0.5);
-            
-            // Animación de entrada
-            bubble.setAlpha(0);
-            speechText.setAlpha(0);
-            
-            scene.tweens.add({
-                targets: [bubble, speechText],
-                alpha: 1,
-                duration: 800,
-                ease: 'Power2'
-            });
-        }
+    function renderClientes(){
+        let search=document.getElementById("filterClients")?.value.toLowerCase()||"";
+        let filtered=clients.filter(c=>c.name.toLowerCase().includes(search));
+        let html=filtered.map(c=>`<div class="border p-2 my-2 rounded ${c.debtTotal>0?'bg-red-100 border-red-400':''}"><div class="font-bold">${c.name} - ${c.phone}</div><div>Deuda: $${c.debtTotal}</div><button class="viewClientHistoryBtn text-blue-600" data-id="${c.id}">Ver compras</button></div>`).join("");
+        document.getElementById("clientsListContainer").innerHTML=html;
+        document.querySelectorAll(".viewClientHistoryBtn").forEach(btn=>btn.addEventListener("click",()=>{ let c=clients.find(cl=>cl.id==parseInt(btn.dataset.id)); Swal.fire({title:`Historial ${c.name}`,html:`<pre>${c.history.map(h=>`${h.date.slice(0,10)} Factura ${h.invoice} Total $${h.total}`).join("\n")||"Sin compras"}</pre>`});}));
+    }
 
-        function createVowelTargets(scene) {
-            const width = scene.cameras.main.width;
-            const height = scene.cameras.main.height;
-            const spacing = width / (vowels.length + 1);
-            
-            for (let i = 0; i < vowels.length; i++) {
-                const x = spacing * (i + 1);
-                const y = height * 0.25;
-                
-                // Contenedor (vagón de mina)
-                const wagon = scene.add.graphics();
-                wagon.fillStyle(0x8D6E63, 1);
-                wagon.fillRoundedRect(x - 70, y - 60, 140, 120, 15);
-                wagon.lineStyle(4, 0x5D4037, 1);
-                wagon.strokeRoundedRect(x - 70, y - 60, 140, 120, 15);
-                
-                // Ruedas
-                wagon.fillStyle(0x37474F, 1);
-                wagon.fillCircle(x - 40, y + 50, 15);
-                wagon.fillCircle(x + 40, y + 50, 15);
-                
-                // Ventana
-                wagon.fillStyle(0x81D4FA, 0.7);
-                wagon.fillRoundedRect(x - 40, y - 40, 80, 50, 10);
-                
-                // Letra de la vocal
-                const letter = scene.add.text(x, y - 15, vowels[i], {
-                    fontFamily: 'Comic Sans MS',
-                    fontSize: '48px',
-                    color: '#FFFFFF',
-                    fontWeight: 'bold',
-                    stroke: '#000000',
-                    strokeThickness: 6
-                });
-                letter.setOrigin(0.5);
-                
-                // Guardar información del contenedor
-                vowelTargets.push({
-                    graphics: wagon,
-                    text: letter,
-                    x: x,
-                    y: y,
-                    vowel: vowels[i],
-                    bounds: new Phaser.Geom.Rectangle(x - 70, y - 60, 140, 120)
-                });
-                
-                // Animación de entrada
-                wagon.setScale(0);
-                letter.setScale(0);
-                
-                scene.tweens.add({
-                    targets: [wagon, letter],
-                    scaleX: 1,
-                    scaleY: 1,
-                    duration: 600,
-                    delay: i * 100,
-                    ease: 'Back.easeOut'
-                });
-            }
-        }
+    function renderSuppliers(){ /* simplificado funcional */ let html=suppliers.map(s=>`<div class="border p-2 my-1"><b>${s.name}</b> Deuda: $${s.debt} <button class="paySupplierBtn" data-id="${s.id}">Pagar</button></div>`).join(""); document.getElementById("suppliersContainer").innerHTML=html; document.querySelectorAll(".paySupplierBtn").forEach(btn=>btn.addEventListener("click",async()=>{ let sup=suppliers.find(s=>s.id==parseInt(btn.dataset.id)); let pay=parseFloat((await Swal.fire({input:"number"})).value); if(pay>0){ sup.debt-=pay; if(sup.debt<0)sup.debt=0; saveAll(); renderSuppliers(); } }));}
+    function renderEncargos(){ let html=encargos.map((e,i)=>`<div>${e.cliente} - ${e.producto} Tel:${e.telefono} <button class="atenderEncargoBtn" data-idx="${i}">Atendido</button></div>`).join(""); document.getElementById("encargosList").innerHTML=html; document.querySelectorAll(".atenderEncargoBtn").forEach(btn=>btn.addEventListener("click",()=>{ encargos.splice(parseInt(btn.dataset.idx),1); saveAll(); renderEncargos(); }));}
+    function renderApartados(){ let html=apartados.map(a=>`<div>${a.clientName} - Total $${a.total} <button class="completarApartadoBtn" data-id="${a.id}">Completar</button></div>`).join(""); document.getElementById("apartadosList").innerHTML=html; }
 
-        function createJewels(scene) {
-            const width = scene.cameras.main.width;
-            const height = scene.cameras.main.height;
-            
-            for (let i = 0; i < vowels.length; i++) {
-                // Posición inicial aleatoria
-                const x = Phaser.Math.Between(width * 0.1, width * 0.9);
-                const y = Phaser.Math.Between(height * 0.7, height * 0.9);
-                
-                // Crear contenedor para la joya
-                const jewelContainer = scene.add.container(x, y);
-                
-                // Intentar cargar la imagen de joya
-                let jewelSprite;
-                try {
-                    jewelSprite = scene.add.sprite(0, 0, 'jewel_base');
-                    jewelSprite.setScale(0.9);
-                } catch (error) {
-                    // Crear joya de respaldo con gráficos
-                    jewelSprite = scene.add.graphics();
-                    jewelSprite.fillStyle(jewelColors[i], 1);
-                    jewelSprite.fillCircle(0, 0, 40);
-                    
-                    // Brillo de la joya
-                    jewelSprite.fillStyle(0xFFFFFF, 0.6);
-                    jewelSprite.fillEllipse(-15, -15, 20, 10);
-                    
-                    // Borde de la joya
-                    jewelSprite.lineStyle(3, 0xFFFFFF, 0.8);
-                    jewelSprite.strokeCircle(0, 0, 40);
-                }
-                
-                // Añadir la joya al contenedor
-                jewelContainer.add(jewelSprite);
-                
-                // Añadir la letra vocal sobre la joya
-                const jewelText = scene.add.text(0, 0, vowels[i], {
-                    fontFamily: 'Comic Sans MS',
-                    fontSize: '36px',
-                    color: '#FFFFFF',
-                    fontWeight: 'bold',
-                    stroke: '#000000',
-                    strokeThickness: 4
-                });
-                jewelText.setOrigin(0.5);
-                jewelContainer.add(jewelText);
-                
-                // Configurar propiedades de la joya
-                jewelContainer.setData('vowel', vowels[i]);
-                jewelContainer.setData('originalX', x);
-                jewelContainer.setData('originalY', y);
-                jewelContainer.setData('placed', false);
-                jewelContainer.setData('sprite', jewelSprite);
-                
-                // Añadir sombra
-                jewelContainer.setDepth(1);
-                
-                // Animación de entrada
-                jewelContainer.setScale(0);
-                scene.tweens.add({
-                    targets: jewelContainer,
-                    scaleX: 1,
-                    scaleY: 1,
-                    duration: 600,
-                    delay: 500 + i * 100,
-                    ease: 'Back.easeOut'
-                });
-                
-                // Animación flotante
-                scene.tweens.add({
-                    targets: jewelContainer,
-                    y: jewelContainer.y - 5,
-                    duration: 1500 + i * 200,
-                    ease: 'Sine.easeInOut',
-                    yoyo: true,
-                    repeat: -1
-                });
-                
-                // Guardar referencia
-                jewels.push(jewelContainer);
-            }
-        }
+    function renderReportes(){
+        let start=document.getElementById("reportStartDate").value, end=document.getElementById("reportEndDate").value;
+        let filtered=sales.filter(s=> (!start||s.date>=start) && (!end||s.date<=end+"T23:59"));
+        let ctx=document.getElementById("salesChart")?.getContext("2d"); if(ctx) new Chart(ctx,{type:'bar',data:{labels:filtered.map(s=>s.invoiceNo),datasets:[{label:"Ventas USD",data:filtered.map(s=>s.total)}]}});
+        document.getElementById("salesReportTable").innerHTML=`<table class="table"><thead><tr><th>Factura</th><th>Cliente</th><th>Monto</th><th>Método</th><th>Vendedor</th></tr></thead><tbody>${filtered.map(s=>`<tr><td>${s.invoiceNo}</td><td>${s.clientName}</td><td>$${s.total}</td><td>${s.paymentMethod}</td><td>${s.sellerName}</td></tr>`).join('')}</tbody></table>`;
+    }
 
-        function setupDragAndDrop(scene) {
-            // Configurar arrastre para cada joya
-            jewels.forEach(jewel => {
-                // Hacer la joya interactiva
-                jewel.setInteractive(new Phaser.Geom.Circle(0, 0, 45), Phaser.Geom.Circle.Contains);
-                
-                // Hacerla arrastrable
-                scene.input.setDraggable(jewel);
-                
-                // Evento cuando se empieza a arrastrar
-                jewel.on('dragstart', (pointer) => {
-                    if (jewel.getData('placed') || gameCompleted) return;
-                    
-                    // Guardar posición inicial
-                    dragStartPosition.x = jewel.x;
-                    dragStartPosition.y = jewel.y;
-                    
-                    // Reproducir sonido
-                    clickSound.play();
-                    
-                    // Traer al frente
-                    jewel.setDepth(100);
-                    
-                    // Efecto de escala
-                    scene.tweens.add({
-                        targets: jewel,
-                        scaleX: 1.2,
-                        scaleY: 1.2,
-                        duration: 150,
-                        ease: 'Back.easeOut'
-                    });
-                });
-                
-                // Evento mientras se arrastra
-                jewel.on('drag', (pointer, dragX, dragY) => {
-                    if (jewel.getData('placed') || gameCompleted) return;
-                    
-                    jewel.x = dragX;
-                    jewel.y = dragY;
-                });
-                
-                // Evento cuando se suelta
-                jewel.on('dragend', (pointer) => {
-                    if (jewel.getData('placed') || gameCompleted) return;
-                    
-                    const vowel = jewel.getData('vowel');
-                    let placedCorrectly = false;
-                    
-                    // Verificar si la joya está sobre su contenedor
-                    for (const target of vowelTargets) {
-                        if (target.vowel === vowel) {
-                            // Crear área de colisión para la joya
-                            const jewelBounds = new Phaser.Geom.Circle(jewel.x, jewel.y, 40);
-                            
-                            // Verificar colisión
-                            if (Phaser.Geom.Intersects.CircleToRectangle(jewelBounds, target.bounds)) {
-                                handleCorrectPlacement(scene, jewel, target);
-                                placedCorrectly = true;
-                                break;
-                            }
-                        }
-                    }
-                    
-                    // Si no se colocó correctamente, volver a la posición original
-                    if (!placedCorrectly) {
-                        handleIncorrectPlacement(scene, jewel);
-                    }
-                });
-            });
-        }
+    function renderAllModules(){
+        if(currentSection==="ventas"){ renderProductsGrid(document.getElementById("searchProductInput")?.value||""); renderCart(); }
+        if(currentSection==="almacen") renderAlmacen();
+        if(currentSection==="inventario") renderInventoryMovements();
+        if(currentSection==="fiados") renderFiados();
+        if(currentSection==="reportes") renderReportes();
+        if(currentSection==="clientes") renderClientes();
+        if(currentSection==="proveedores") renderSuppliers();
+        if(currentSection==="encargos") renderEncargos();
+        if(currentSection==="apartados") renderApartados();
+    }
 
-        function handleCorrectPlacement(scene, jewel, target) {
-            // Marcar como colocada
-            jewel.setData('placed', true);
-            
-            // Reproducir sonido de acierto
-            correctSound.play();
-            
-            // Desactivar interactividad
-            jewel.disableInteractive();
-            
-            // Mover la joya al centro del contenedor
-            scene.tweens.add({
-                targets: jewel,
-                x: target.x,
-                y: target.y,
-                scaleX: 1.1,
-                scaleY: 1.1,
-                duration: 300,
-                ease: 'Back.easeOut',
-                onComplete: () => {
-                    // Efecto de partículas
-                    createParticleEffect(scene, target.x, target.y);
-                    
-                    // Animación final
-                    scene.tweens.add({
-                        targets: jewel,
-                        scaleX: 1,
-                        scaleY: 1,
-                        duration: 200,
-                        ease: 'Bounce.easeOut'
-                    });
-                    
-                    // Incrementar contador
-                    placedJewels++;
-                    
-                    // Verificar si se completó el juego
-                    if (placedJewels >= totalJewels) {
-                        gameCompleted = true;
-                        showCompletionScreen(scene);
-                    }
-                }
-            });
-        }
-
-        function handleIncorrectPlacement(scene, jewel) {
-            // Reproducir sonido de error
-            errorSound.play();
-            
-            // Devolver a la posición original con animación
-            scene.tweens.add({
-                targets: jewel,
-                x: jewel.getData('originalX'),
-                y: jewel.getData('originalY'),
-                scaleX: 1,
-                scaleY: 1,
-                duration: 500,
-                ease: 'Power2.easeOut',
-                onComplete: () => {
-                    // Volver al depth normal
-                    jewel.setDepth(1);
-                }
-            });
-        }
-
-        function createParticleEffect(scene, x, y) {
-            // Crear partículas para celebrar el acierto
-            const particles = scene.add.particles(0, 0);
-            
-            // Crear una forma para las partículas
-            const circle = new Phaser.Geom.Circle(0, 0, 5);
-            particles.setGeometry(circle);
-            
-            // Configurar el emisor de partículas
-            const emitter = particles.createEmitter({
-                quantity: 20,
-                lifespan: 1000,
-                speed: { min: 100, max: 200 },
-                scale: { start: 0.8, end: 0 },
-                alpha: { start: 1, end: 0 },
-                blendMode: 'ADD',
-                x: x,
-                y: y
-            });
-            
-            // Detener el emisor después de un tiempo
-            scene.time.delayedCall(500, () => {
-                emitter.stop();
-            });
-            
-            // Destruir las partículas después de que terminen
-            scene.time.delayedCall(1500, () => {
-                particles.destroy();
-            });
-        }
-
-        function showCompletionScreen(scene) {
-            const width = scene.cameras.main.width;
-            const height = scene.cameras.main.height;
-            
-            // Crear fondo semi-transparente
-            const overlay = scene.add.graphics();
-            overlay.fillStyle(0x000000, 0.7);
-            overlay.fillRect(0, 0, width, height);
-            overlay.setDepth(1000);
-            
-            // Crear panel de victoria
-            const panel = scene.add.graphics();
-            panel.fillStyle(0x6A11CB, 0.95);
-            panel.fillRoundedRect(width/2 - 200, height/2 - 150, 400, 300, 25);
-            panel.lineStyle(6, 0xFFD700, 1);
-            panel.strokeRoundedRect(width/2 - 200, height/2 - 150, 400, 300, 25);
-            panel.setDepth(1001);
-            
-            // Título
-            const title = scene.add.text(width/2, height/2 - 90, '¡EXCELENTE!', {
-                fontFamily: 'Comic Sans MS',
-                fontSize: '52px',
-                color: '#FFD700',
-                fontWeight: 'bold',
-                stroke: '#000000',
-                strokeThickness: 6
-            });
-            title.setOrigin(0.5);
-            title.setDepth(1002);
-            
-            // Mensaje
-            const message = scene.add.text(width/2, height/2 - 10, 
-                'Has organizado todas\nlas joyas correctamente.', {
-                fontFamily: 'Comic Sans MS',
-                fontSize: '26px',
-                color: '#FFFFFF',
-                align: 'center',
-                lineSpacing: 10
-            });
-            message.setOrigin(0.5);
-            message.setDepth(1002);
-            
-            // Botón de reinicio
-            const button = scene.add.graphics();
-            button.fillStyle(0x4CAF50, 1);
-            button.fillRoundedRect(width/2 - 100, height/2 + 60, 200, 60, 12);
-            button.lineStyle(4, 0x2E7D32, 1);
-            button.strokeRoundedRect(width/2 - 100, height/2 + 60, 200, 60, 12);
-            button.setDepth(1001);
-            
-            const buttonText = scene.add.text(width/2, height/2 + 90, 'JUGAR DE NUEVO', {
-                fontFamily: 'Comic Sans MS',
-                fontSize: '22px',
-                color: '#FFFFFF',
-                fontWeight: 'bold'
-            });
-            buttonText.setOrigin(0.5);
-            buttonText.setDepth(1002);
-            
-            // Hacer el botón interactivo
-            button.setInteractive(new Phaser.Geom.Rectangle(width/2 - 100, height/2 + 60, 200, 60), 
-                                 Phaser.Geom.Rectangle.Contains);
-            
-            // Efecto hover
-            button.on('pointerover', () => {
-                button.clear();
-                button.fillStyle(0x66BB6A, 1);
-                button.fillRoundedRect(width/2 - 100, height/2 + 60, 200, 60, 12);
-                button.lineStyle(4, 0x388E3C, 1);
-                button.strokeRoundedRect(width/2 - 100, height/2 + 60, 200, 60, 12);
-            });
-            
-            button.on('pointerout', () => {
-                button.clear();
-                button.fillStyle(0x4CAF50, 1);
-                button.fillRoundedRect(width/2 - 100, height/2 + 60, 200, 60, 12);
-                button.lineStyle(4, 0x2E7D32, 1);
-                button.strokeRoundedRect(width/2 - 100, height/2 + 60, 200, 60, 12);
-            });
-            
-            // Acción al hacer clic
-            button.on('pointerdown', () => {
-                // Reiniciar la escena
-                scene.scene.restart();
-            });
-            
-            // Animación de entrada
-            overlay.setAlpha(0);
-            panel.setAlpha(0);
-            title.setAlpha(0);
-            message.setAlpha(0);
-            button.setAlpha(0);
-            buttonText.setAlpha(0);
-            
-            scene.tweens.add({
-                targets: overlay,
-                alpha: 1,
-                duration: 500,
-                ease: 'Power2'
-            });
-            
-            scene.tweens.add({
-                targets: [panel, title, message, button, buttonText],
-                alpha: 1,
-                duration: 600,
-                delay: 300,
-                ease: 'Power2'
-            });
-            
-            // Efectos de partículas de celebración
-            createCelebrationParticles(scene);
-        }
-
-        function createCelebrationParticles(scene) {
-            const width = scene.cameras.main.width;
-            const height = scene.cameras.main.height;
-            
-            // Crear varios emisores de partículas
-            for (let i = 0; i < 5; i++) {
-                const particles = scene.add.particles(0, 0);
-                const circle = new Phaser.Geom.Circle(0, 0, 5);
-                particles.setGeometry(circle);
-                
-                const emitter = particles.createEmitter({
-                    quantity: 30,
-                    lifespan: 2000,
-                    speed: { min: 150, max: 300 },
-                    scale: { start: 1, end: 0 },
-                    alpha: { start: 1, end: 0 },
-                    blendMode: 'ADD',
-                    x: Phaser.Math.Between(width * 0.2, width * 0.8),
-                    y: Phaser.Math.Between(height * 0.2, height * 0.8),
-                    frequency: 100,
-                    duration: 1000
-                });
-                
-                // Limpiar después
-                scene.time.delayedCall(2000, () => {
-                    emitter.stop();
-                });
-                
-                scene.time.delayedCall(4000, () => {
-                    particles.destroy();
-                });
-            }
-        }
-
-        function resize(gameSize) {
-            // Ajustar la cámara al nuevo tamaño
-            if (game.cameras && game.cameras.main) {
-                game.cameras.main.setSize(gameSize.width, gameSize.height);
-            }
-        }
-    </script>
+    // navegación
+    let sections=["ventas","almacen","inventario","fiados","reportes","clientes","proveedores","encargos","apartados"];
+    function showSection(section){
+        currentSection=section;
+        sections.forEach(s=>{ let el=document.getElementById(`section-${s}`); if(el) el.classList.remove("active-section"); });
+        document.getElementById(`section-${section}`).classList.add("active-section");
+        renderAllModules();
+    }
+    window.onload=()=>{
+        let navbar=document.getElementById("navButtonsContainer");
+        let btns=["Ventas","Almacen","Inventario","Fiados","Cierre / Reportes","Clientes","Proveedores","Encargos","Apartados"];
+        btns.forEach(btn=>{ let b=document.createElement("button"); b.innerText=btn; b.className="bg-gray-200 hover:bg-blue-700 hover:text-white px-3 py-1 rounded-full text-sm transition"; b.onclick=()=>showSection(btn.toLowerCase().replace(/[^a-z]/g,'')); navbar.appendChild(b); });
+        showSection("ventas");
+        document.getElementById("searchProductInput")?.addEventListener("input",e=>renderProductsGrid(e.target.value));
+        document.getElementById("clearCartBtn")?.addEventListener("click",clearCart);
+        document.getElementById("confirmSaleBtn")?.addEventListener("click",confirmSale);
+        document.getElementById("addProductBtn")?.addEventListener("click",async()=>{ let name=await SwelInput("Nombre"); let price=parseFloat(await SwelInput("Precio $")); let cat=await SwelInput("Categoría"); let stock=parseInt(await SwelInput("Stock")); products.push({id:Date.now(), code:`P${nextProductCode++}`, name, price, stock, category:cat, image:"https://picsum.photos/id/2/80/80", createdDate:new Date().toISOString()}); saveAll(); renderAlmacen(); });
+        document.getElementById("editMovementsBtn")?.addEventListener("click",async()=>{ let pass=await Swal.fire({input:"password",title:"Contraseña"}); if(pass.value=="123456") Swal.fire("Modo editor habilitado (demo solo alerta)"); else Swal.fire("Denegado"); });
+        document.getElementById("downloadFiadosExcel")?.addEventListener("click",()=>{ let ws=XLSX.utils.json_to_sheet(fiados); let wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,"Fiados"); XLSX.writeFile(wb,"fiados.xlsx"); });
+        document.getElementById("downloadSalesExcel")?.addEventListener("click",()=>{ let ws=XLSX.utils.json_to_sheet(sales); XLSX.writeFile(XLSX.utils.book_new(),"ventas.xlsx"); });
+        document.getElementById("downloadInventoryTodayExcel")?.addEventListener("click",()=>{ let ws=XLSX.utils.json_to_sheet(products); XLSX.writeFile(XLSX.utils.book_new(),"inventario_hoy.xlsx"); });
+        document.getElementById("newEncargoBtn")?.addEventListener("click",async()=>{ let cliente=await SwelInput("Cliente"); let producto=await SwelInput("Artículo"); let telefono=await SwelInput("Teléfono"); encargos.push({cliente,producto,telefono}); saveAll(); renderEncargos(); });
+        window.SwelInput=async(msg)=>(await Swal.fire({input:"text",title:msg})).value;
+    };
+</script>
 </body>
 </html>
