@@ -1,526 +1,447 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8">
-<title>Noah Shop POS</title>
-
-<meta name="viewport" content="width=device-width, initial-scale=1">
-
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-<link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-
-<style>
-
-body{
-background:#f4f6f9;
-font-family:Arial;
-}
-
-.topbar{
-background:#0f172a;
-color:white;
-padding:10px;
-}
-
-.menu{
-background:#1e293b;
-color:white;
-padding:10px;
-display:flex;
-gap:15px;
-flex-wrap:wrap;
-}
-
-.menu button{
-background:none;
-border:none;
-color:white;
-font-size:14px;
-}
-
-.section{
-display:none;
-padding:20px;
-}
-
-.section.active{
-display:block;
-}
-
-.stock-low{
-color:red;
-font-weight:bold;
-}
-
-.factura{
-background:white;
-padding:20px;
-border:1px solid #ddd;
-width:350px;
-}
-
-.watermark{
-position:absolute;
-opacity:0.1;
-font-size:60px;
-transform:rotate(-30deg);
-}
-
-footer{
-text-align:center;
-padding:10px;
-background:#0f172a;
-color:white;
-}
-
-</style>
-
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-width=1.0">
+    <title>POS Noah Shop | Nexus Marketing</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+    
+    <script>
+        tailwind.config = {
+            theme: { extend: { colors: { brand: '#1E3A8A', accent: '#F59E0B' } } }
+        }
+    </script>
+    <style>
+        /* Estilos para ocultar scrollbars pero mantener funcionalidad */
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        /* Diseño de la Nota de Venta (Oculto en UI, visible para Render) */
+        #render-factura {
+            width: 400px;
+            background: white;
+            padding: 20px;
+            position: absolute;
+            left: -9999px; /* Oculto de la vista */
+            font-family: 'Courier New', Courier, monospace;
+            border: 1px solid #ccc;
+        }
+        .watermark {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%) rotate(-45deg);
+            font-size: 4rem; color: rgba(0,0,0,0.05);
+            font-weight: bold; white-space: nowrap; pointer-events: none;
+        }
+    </style>
 </head>
-
-<body>
-
-<div class="topbar d-flex justify-content-between">
-
-<div>
-<h4>🛍 Noah Shop</h4>
-Valencia Edo Carabobo | Tel: 0412-8517800
-</div>
-
-<div>
-POS Profesional
-</div>
-
-</div>
-
-
-<div class="menu">
-
-<button onclick="showSection('ventas')"><i class="fa fa-cash-register"></i> Ventas</button>
-
-<button onclick="showSection('almacen')"><i class="fa fa-box"></i> Almacen</button>
-
-<button onclick="showSection('fiados')"><i class="fa fa-credit-card"></i> Fiados</button>
-
-<button onclick="showSection('clientes')"><i class="fa fa-users"></i> Clientes</button>
-
-<button onclick="showSection('proveedores')"><i class="fa fa-truck"></i> Proveedores</button>
-
-<button onclick="showSection('apartados')"><i class="fa fa-lock"></i> Apartados</button>
-
-<button onclick="showSection('encargos')"><i class="fa fa-clipboard"></i> Encargos</button>
-
-<button onclick="showSection('reportes')"><i class="fa fa-chart-bar"></i> Cierre / Reportes</button>
-
-</div>
-
-<!-- VENTAS -->
-
-<div id="ventas" class="section active">
-
-<h3>Ventas</h3>
-
-<input id="buscarProducto" class="form-control mb-3" placeholder="Buscar producto">
-
-<div id="listaProductos"></div>
-
-<hr>
-
-<h4>Nota de Venta</h4>
-
-<input id="clienteNombre" placeholder="Nombre Cliente" class="form-control mb-2">
-
-<input id="clienteTelefono" placeholder="Whatsapp" class="form-control mb-2">
-
-<input id="direccion" placeholder="Dirección" class="form-control mb-2">
-
-<table class="table">
-
-<thead>
-
-<tr>
-
-<th>Producto</th>
-<th>Cant</th>
-<th>$</th>
-<th>Total</th>
-<th></th>
-
-</tr>
-
-</thead>
-
-<tbody id="carrito"></tbody>
-
-</table>
-
-<h4>Total $ <span id="totalVenta">0</span></h4>
-
-<select id="metodoPago" class="form-control mb-2">
-
-<option>Efectivo</option>
-<option>Pago Movil</option>
-<option>Divisas</option>
-<option>Transferencia</option>
-<option>Binance</option>
-<option>Fiado</option>
-<option>Apartado</option>
-
-</select>
-
-<button class="btn btn-success" onclick="finalizarVenta()">Concretar Venta</button>
-
-<button class="btn btn-danger" onclick="anularVenta()">Anular</button>
-
-</div>
-
-
-<!-- ALMACEN -->
-
-<div id="almacen" class="section">
-
-<h3>Inventario</h3>
-
-<input id="nuevoProducto" placeholder="Producto" class="form-control mb-2">
-
-<input id="precioProducto" placeholder="Precio $" class="form-control mb-2">
-
-<input id="stockProducto" placeholder="Stock" class="form-control mb-2">
-
-<button class="btn btn-primary" onclick="agregarProducto()">Agregar Producto</button>
-
-<hr>
-
-<button class="btn btn-success" onclick="descargarInventario()">Descargar Excel</button>
-
-<div id="inventarioLista"></div>
-
-</div>
-
-
-<!-- REPORTES -->
-
-<div id="reportes" class="section">
-
-<h3>Reportes</h3>
-
-<canvas id="graficoVentas"></canvas>
-
-<button class="btn btn-success mt-3" onclick="descargarVentas()">Descargar Excel</button>
-
-</div>
-
-
-<footer>
-
-Sistema POS desarrollado para Noah Shop  
-Agradecimientos a Nexus Marketing 04244525765
-
-</footer>
-
-
-<script>
-
-let productos=JSON.parse(localStorage.getItem("productos"))||[]
-
-let carrito=[]
-
-let ventas=JSON.parse(localStorage.getItem("ventas"))||[]
-
-
-function showSection(id){
-
-document.querySelectorAll(".section").forEach(s=>s.classList.remove("active"))
-
-document.getElementById(id).classList.add("active")
-
-renderProductos()
-
-renderInventario()
-
-}
-
-
-function agregarProducto(){
-
-let nombre=document.getElementById("nuevoProducto").value
-
-let precio=parseFloat(document.getElementById("precioProducto").value)
-
-let stock=parseInt(document.getElementById("stockProducto").value)
-
-productos.push({
-
-id:Date.now(),
-nombre,
-precio,
-stock
-
-})
-
-localStorage.setItem("productos",JSON.stringify(productos))
-
-renderInventario()
-
-}
-
-
-function renderInventario(){
-
-let html=""
-
-productos.forEach(p=>{
-
-html+=`
-
-<div>
-
-${p.nombre} | $${p.precio} | Stock: ${p.stock}
-
-</div>
-
-`
-
-})
-
-document.getElementById("inventarioLista").innerHTML=html
-
-}
-
-
-function renderProductos(){
-
-let html=""
-
-productos.forEach(p=>{
-
-let alerta=p.stock<=6?"stock-low":""
-
-html+=`
-
-<div class="card p-2 mb-2">
-
-${p.nombre}
-
-Stock <span class="${alerta}">${p.stock}</span>
-
-Precio $${p.precio}
-
-<input id="cant${p.id}" type="number" value="1">
-
-<button onclick="agregarCarrito(${p.id})">Agregar</button>
-
-</div>
-
-`
-
-})
-
-document.getElementById("listaProductos").innerHTML=html
-
-}
-
-
-function agregarCarrito(id){
-
-let prod=productos.find(p=>p.id==id)
-
-let cant=parseInt(document.getElementById("cant"+id).value)
-
-carrito.push({
-
-...prod,
-cant
-
-})
-
-renderCarrito()
-
-}
-
-
-function renderCarrito(){
-
-let html=""
-
-let total=0
-
-carrito.forEach((p,i)=>{
-
-let subtotal=p.cant*p.precio
-
-total+=subtotal
-
-html+=`
-
-<tr>
-
-<td>${p.nombre}</td>
-
-<td>${p.cant}</td>
-
-<td>${p.precio}</td>
-
-<td>${subtotal}</td>
-
-<td><button onclick="eliminarItem(${i})">X</button></td>
-
-</tr>
-
-`
-
-})
-
-document.getElementById("carrito").innerHTML=html
-
-document.getElementById("totalVenta").innerText=total
-
-}
-
-
-function eliminarItem(i){
-
-carrito.splice(i,1)
-
-renderCarrito()
-
-}
-
-
-function anularVenta(){
-
-carrito=[]
-
-renderCarrito()
-
-}
-
-
-function finalizarVenta(){
-
-let cliente=document.getElementById("clienteNombre").value
-
-let telefono=document.getElementById("clienteTelefono").value
-
-let direccion=document.getElementById("direccion").value
-
-let total=document.getElementById("totalVenta").innerText
-
-let venta={
-
-fecha:new Date(),
-cliente,
-telefono,
-direccion,
-carrito,
-total
-
-}
-
-ventas.push(venta)
-
-localStorage.setItem("ventas",JSON.stringify(ventas))
-
-
-carrito.forEach(c=>{
-
-let prod=productos.find(p=>p.id==c.id)
-
-prod.stock-=c.cant
-
-})
-
-localStorage.setItem("productos",JSON.stringify(productos))
-
-generarFactura(venta)
-
-carrito=[]
-
-renderCarrito()
-
-renderProductos()
-
-}
-
-
-function generarFactura(v){
-
-let div=document.createElement("div")
-
-div.className="factura"
-
-div.innerHTML=`
-
-<img src="https://github.com/jhonmalorne/SistemadeventasNoahShop/blob/main/Noah%20Shop.jpg?raw=true" width="100">
-
-<h4>Noah Shop</h4>
-
-Cliente: ${v.cliente}
-
-Telefono: ${v.telefono}
-
-Direccion: ${v.direccion}
-
-<hr>
-
-${v.carrito.map(p=>`${p.nombre} x${p.cant} $${p.precio}`).join("<br>")}
-
-<hr>
-
-Total $${v.total}
-
-`
-
-document.body.appendChild(div)
-
-html2canvas(div).then(canvas=>{
-
-let img=canvas.toDataURL("image/png")
-
-let url=`https://wa.me/58${v.telefono}?text=Gracias por su compra&media=${img}`
-
-window.open(url)
-
-div.remove()
-
-})
-
-}
-
-
-function descargarInventario(){
-
-let ws=XLSX.utils.json_to_sheet(productos)
-
-let wb=XLSX.utils.book_new()
-
-XLSX.utils.book_append_sheet(wb,ws,"Inventario")
-
-XLSX.writeFile(wb,"inventario_noah_shop.xlsx")
-
-}
-
-
-function descargarVentas(){
-
-let ws=XLSX.utils.json_to_sheet(ventas)
-
-let wb=XLSX.utils.book_new()
-
-XLSX.utils.book_append_sheet(wb,ws,"Ventas")
-
-XLSX.writeFile(wb,"ventas_noah_shop.xlsx")
-
-}
-
-
-renderProductos()
-
-</script>
-
+<body class="bg-gray-50 text-gray-800 font-sans h-screen flex flex-col overflow-hidden">
+
+    <header class="bg-brand text-white shadow-md">
+        <div class="px-6 py-3 flex justify-between items-center">
+            <div class="flex items-center gap-3">
+                <img src="https://github.com/jhonmalorne/SistemadeventasNoahShop/blob/main/Noah%20Shop.jpg?raw=true" alt="Noah Shop Logo" class="h-10 w-10 rounded-full bg-white object-cover">
+                <div>
+                    <h1 class="text-xl font-bold tracking-wider">NOAH SHOP</h1>
+                    <p class="text-xs text-gray-300">Ropa al detal y mayor | Tel: 0412-8517800</p>
+                </div>
+            </div>
+            <div class="text-right hidden md:block">
+                <p class="text-sm font-semibold">Correlativo Factura: <span id="ui-correlativo" class="text-accent">#0001</span></p>
+            </div>
+        </div>
+        
+        <nav class="bg-gray-900 overflow-x-auto no-scrollbar">
+            <ul class="flex whitespace-nowrap px-4 py-2 text-sm font-medium">
+                <li><button onclick="nav('ventas')" class="px-4 py-2 hover:bg-gray-700 rounded transition"><i class="fa-solid fa-cart-shopping mr-2"></i>Ventas</button></li>
+                <li><button onclick="nav('almacen')" class="px-4 py-2 hover:bg-gray-700 rounded transition"><i class="fa-solid fa-boxes-stacked mr-2"></i>Almacén</button></li>
+                <li><button onclick="nav('fiados')" class="px-4 py-2 hover:bg-gray-700 rounded transition"><i class="fa-solid fa-hand-holding-dollar mr-2"></i>Fiados</button></li>
+                <li><button onclick="nav('clientes')" class="px-4 py-2 hover:bg-gray-700 rounded transition"><i class="fa-solid fa-users mr-2"></i>Clientes</button></li>
+                <li><button onclick="nav('proveedores')" class="px-4 py-2 hover:bg-gray-700 rounded transition"><i class="fa-solid fa-truck-field mr-2"></i>Proveedores</button></li>
+                <li><button onclick="nav('apartados')" class="px-4 py-2 hover:bg-gray-700 rounded transition"><i class="fa-solid fa-box-open mr-2"></i>Apartados</button></li>
+                <li><button onclick="nav('encargos')" class="px-4 py-2 hover:bg-gray-700 rounded transition"><i class="fa-solid fa-clipboard-list mr-2"></i>Encargos</button></li>
+                <li><button onclick="nav('reportes')" class="px-4 py-2 hover:bg-gray-700 rounded transition"><i class="fa-solid fa-chart-line mr-2"></i>Cierre/Reportes</button></li>
+                <li><button onclick="nav('inventario')" class="px-4 py-2 hover:bg-gray-700 rounded transition text-red-400"><i class="fa-solid fa-lock mr-2"></i>Inventario (Admin)</button></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main class="flex-1 flex overflow-hidden">
+        
+        <section id="view-ventas" class="flex-1 flex w-full">
+            <div class="w-2/3 p-6 overflow-y-auto bg-gray-100">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-2xl font-bold text-gray-800">Terminal de Ventas</h2>
+                    <div class="relative w-1/2">
+                        <i class="fa-solid fa-search absolute left-3 top-3 text-gray-400"></i>
+                        <input type="text" id="search-product" placeholder="Buscar por código, nombre o categoría..." class="w-full pl-10 pr-4 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-brand shadow-sm" onkeyup="renderProducts()">
+                    </div>
+                </div>
+                <div id="product-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    </div>
+            </div>
+
+            <div class="w-1/3 bg-white shadow-xl flex flex-col border-l">
+                <div class="p-4 bg-gray-50 border-b flex justify-between items-center">
+                    <h3 class="font-bold text-lg"><i class="fa-solid fa-receipt mr-2"></i>Nota de Venta</h3>
+                    <button onclick="clearCart()" class="text-red-500 hover:text-red-700 text-sm"><i class="fa-solid fa-trash mr-1"></i>Anular</button>
+                </div>
+                
+                <div id="cart-items" class="flex-1 overflow-y-auto p-4">
+                    </div>
+
+                <div class="p-4 border-t bg-gray-50">
+                    <div class="flex justify-between mb-2 text-lg font-bold">
+                        <span>Total a Pagar:</span>
+                        <span class="text-green-600">$<span id="cart-total">0.00</span></span>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-2 mb-2">
+                        <input type="text" id="client-name" placeholder="Nombre Cliente" class="border rounded p-2 text-sm w-full">
+                        <input type="text" id="client-phone" placeholder="WhatsApp (Ej: 0412...)" class="border rounded p-2 text-sm w-full">
+                    </div>
+                    <input type="text" id="client-address" placeholder="Dirección referencial" class="border rounded p-2 text-sm w-full mb-2">
+                    
+                    <div class="grid grid-cols-2 gap-2 mb-3">
+                        <select id="payment-method" class="border rounded p-2 text-sm w-full bg-white">
+                            <option value="Pago Movil">Pago Móvil</option>
+                            <option value="Efectivo USD">Efectivo USD</option>
+                            <option value="Biopago">Biopago</option>
+                            <option value="Binance">Binance</option>
+                            <option value="Fiado">Fiado (Crédito)</option>
+                            <option value="Apartado">Apartado</option>
+                        </select>
+                        <input type="text" id="seller-name" placeholder="Vendedor" class="border rounded p-2 text-sm w-full">
+                    </div>
+
+                    <button onclick="processSale()" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-lg shadow-lg transition duration-200">
+                        <i class="fa-brands fa-whatsapp mr-2"></i>Concretar y Enviar Nota
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <section id="view-almacen" class="flex-1 w-full p-6 bg-gray-100 hidden overflow-y-auto">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold">Control de Almacén</h2>
+                <button onclick="downloadExcel('almacen')" class="bg-blue-600 text-white px-4 py-2 rounded shadow hover:bg-blue-700"><i class="fa-solid fa-file-excel mr-2"></i>Descargar Stock</button>
+            </div>
+            
+            <div class="bg-white rounded-lg shadow p-4">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Código</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Descripción</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Categoría</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Stock</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Precio ($)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="inventory-table" class="bg-white divide-y divide-gray-200">
+                        </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section id="view-construccion" class="flex-1 flex justify-center items-center bg-gray-100 hidden">
+            <div class="text-center">
+                <i class="fa-solid fa-person-digging text-6xl text-gray-400 mb-4"></i>
+                <h2 class="text-2xl text-gray-600 font-bold">Módulo en Construcción</h2>
+                <p class="text-gray-500">Selecciona Ventas o Almacén en el menú superior.</p>
+            </div>
+        </section>
+
+    </main>
+
+    <footer class="bg-gray-900 text-gray-400 text-center py-2 text-xs">
+        <p>Sistema POS diseñado para Noah Shop. Desarrollo y UX/UI por <strong>Nexus Marketing (04244525765)</strong></p>
+    </footer>
+
+    <div id="render-factura">
+        <div class="watermark">NOAH SHOP</div>
+        <div style="text-align: center; border-bottom: 2px dashed #000; padding-bottom: 10px; margin-bottom: 10px;">
+            <img src="https://github.com/jhonmalorne/SistemadeventasNoahShop/blob/main/Noah%20Shop.jpg?raw=true" style="width: 60px; border-radius: 50%; margin: 0 auto;">
+            <h2 style="margin: 5px 0;">NOAH SHOP</h2>
+            <p style="font-size: 12px; margin: 0;">Ropa al detal y mayor</p>
+            <p style="font-size: 12px; margin: 0;">Valencia, Edo Carabobo</p>
+            <p style="font-size: 12px; margin: 0;">Tel: 0412-8517800</p>
+            <p style="font-size: 12px; margin: 5px 0 0 0; font-weight: bold;">Nota de Venta: <span id="render-invoice-num"></span></p>
+        </div>
+        <div style="font-size: 12px; margin-bottom: 10px;">
+            <p><strong>Cliente:</strong> <span id="render-client"></span></p>
+            <p><strong>Dirección:</strong> <span id="render-address"></span></p>
+            <p><strong>Fecha:</strong> <span id="render-date"></span></p>
+        </div>
+        <table style="width: 100%; font-size: 12px; text-align: left; border-collapse: collapse;">
+            <thead>
+                <tr style="border-bottom: 1px solid #000;">
+                    <th>Cant</th>
+                    <th>Descripción</th>
+                    <th>P.U ($)</th>
+                    <th>Total</th>
+                </tr>
+            </thead>
+            <tbody id="render-items">
+                </tbody>
+        </table>
+        <div style="text-align: right; margin-top: 15px; font-size: 16px; font-weight: bold;">
+            Total: $<span id="render-total"></span>
+        </div>
+        <div style="text-align: center; font-size: 10px; margin-top: 20px; color: #555;">
+            Gracias por su compra. Sistema por Nexus Marketing.
+        </div>
+    </div>
+
+    <script>
+        // --- 1. BASE DE DATOS LOCAL (Simulación Módulo Almacén) ---
+        let db = {
+            invoiceCounter: parseInt(localStorage.getItem('invoiceCounter')) || 1,
+            products: JSON.parse(localStorage.getItem('products')) || [
+                { id: 'NS-001', name: 'Jean Dama Skinny', category: 'Damas', stock: 15, price: 12.50 },
+                { id: 'NS-002', name: 'Franela Oversize', category: 'Caballeros', stock: 5, price: 8.00 }, // Stock crítico (<6)
+                { id: 'NS-003', name: 'Conjunto Deportivo', category: 'Niños', stock: 20, price: 15.00 },
+                { id: 'NS-004', name: 'Chaqueta Denim', category: 'Unisex', stock: 8, price: 25.00 }
+            ],
+            cart: []
+        };
+
+        // Guardar datos en local
+        function saveData() {
+            localStorage.setItem('products', JSON.stringify(db.products));
+            localStorage.setItem('invoiceCounter', db.invoiceCounter);
+        }
+
+        // --- 2. NAVEGACIÓN ---
+        function nav(viewName) {
+            const views = ['view-ventas', 'view-almacen', 'view-construccion'];
+            views.forEach(v => document.getElementById(v)?.classList.add('hidden'));
+            
+            if(viewName === 'ventas') {
+                document.getElementById('view-ventas').classList.remove('hidden');
+                renderProducts();
+            } else if(viewName === 'almacen') {
+                document.getElementById('view-almacen').classList.remove('hidden');
+                renderAlmacen();
+            } else {
+                document.getElementById('view-construccion').classList.remove('hidden');
+            }
+        }
+
+        // --- 3. MÓDULO VENTAS ---
+        function renderProducts() {
+            const grid = document.getElementById('product-grid');
+            const search = document.getElementById('search-product').value.toLowerCase();
+            grid.innerHTML = '';
+
+            db.products.forEach(p => {
+                if(p.name.toLowerCase().includes(search) || p.id.toLowerCase().includes(search)) {
+                    const isLowStock = p.stock <= 6;
+                    const stockClass = isLowStock ? 'text-red-600 font-bold bg-red-100 px-2 rounded' : 'text-gray-600';
+                    const bgBorder = isLowStock ? 'border-red-300' : 'border-gray-200';
+
+                    grid.innerHTML += `
+                        <div class="bg-white p-4 rounded-lg shadow-sm border ${bgBorder} flex flex-col justify-between">
+                            <div>
+                                <span class="text-xs text-gray-400 block">${p.id} | ${p.category}</span>
+                                <h3 class="font-bold text-gray-800">${p.name}</h3>
+                                <p class="text-sm mt-1">Stock: <span class="${stockClass}">${p.stock} unds</span></p>
+                                <p class="text-lg font-bold text-green-600 mt-2">$${p.price.toFixed(2)}</p>
+                            </div>
+                            <div class="mt-4 flex gap-2">
+                                <input type="number" id="qty-${p.id}" value="1" min="1" max="${p.stock}" class="w-16 border rounded text-center focus:ring-brand">
+                                <button onclick="addToCart('${p.id}')" class="flex-1 bg-brand text-white rounded hover:bg-blue-800 transition text-sm py-1">
+                                    <i class="fa-solid fa-plus"></i> Agregar
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                }
+            });
+            document.getElementById('ui-correlativo').innerText = `#${db.invoiceCounter.toString().padStart(4, '0')}`;
+        }
+
+        function addToCart(id) {
+            const product = db.products.find(p => p.id === id);
+            const qtyInput = document.getElementById(`qty-${id}`);
+            const qty = parseInt(qtyInput.value);
+
+            if (qty > product.stock) {
+                alert(`Stock insuficiente. Solo quedan ${product.stock} unidades.`);
+                return;
+            }
+
+            const existing = db.cart.find(item => item.id === id);
+            if (existing) {
+                if (existing.qty + qty > product.stock) { alert('Excede el stock'); return; }
+                existing.qty += qty;
+            } else {
+                // Hacemos una copia para permitir edición de precio en carrito
+                db.cart.push({ ...product, qty: qty, currentPrice: product.price });
+            }
+            qtyInput.value = 1; // Reset input
+            renderCart();
+        }
+
+        function updateCartItem(id, action, newValue = null) {
+            const item = db.cart.find(i => i.id === id);
+            const product = db.products.find(p => p.id === id);
+            
+            if(action === 'add' && item.qty < product.stock) item.qty++;
+            if(action === 'sub' && item.qty > 1) item.qty--;
+            if(action === 'remove') db.cart = db.cart.filter(i => i.id !== id);
+            if(action === 'price' && newValue) item.currentPrice = parseFloat(newValue);
+            
+            renderCart();
+        }
+
+        function renderCart() {
+            const cartContainer = document.getElementById('cart-items');
+            cartContainer.innerHTML = '';
+            let total = 0;
+
+            db.cart.forEach(item => {
+                const subtotal = item.qty * item.currentPrice;
+                total += subtotal;
+                cartContainer.innerHTML += `
+                    <div class="bg-white p-3 rounded shadow-sm border mb-2 text-sm">
+                        <div class="flex justify-between font-bold text-gray-800">
+                            <span>${item.name}</span>
+                            <button onclick="updateCartItem('${item.id}', 'remove')" class="text-red-400 hover:text-red-600"><i class="fa-solid fa-xmark"></i></button>
+                        </div>
+                        <div class="flex justify-between items-center mt-2">
+                            <div class="flex items-center border rounded">
+                                <button onclick="updateCartItem('${item.id}', 'sub')" class="px-2 bg-gray-100 hover:bg-gray-200">-</button>
+                                <span class="px-2 font-medium">${item.qty}</span>
+                                <button onclick="updateCartItem('${item.id}', 'add')" class="px-2 bg-gray-100 hover:bg-gray-200">+</button>
+                            </div>
+                            <div class="flex items-center gap-1">
+                                <span>$</span>
+                                <input type="number" step="0.5" value="${item.currentPrice}" onchange="updateCartItem('${item.id}', 'price', this.value)" class="w-16 border rounded text-right px-1">
+                            </div>
+                            <span class="font-bold text-brand">$${subtotal.toFixed(2)}</span>
+                        </div>
+                    </div>
+                `;
+            });
+            document.getElementById('cart-total').innerText = total.toFixed(2);
+        }
+
+        function clearCart() {
+            if(confirm('¿Seguro que desea anular la venta en curso?')) {
+                db.cart = [];
+                renderCart();
+            }
+        }
+
+        // --- 4. CHECKOUT Y GENERACIÓN DE FACTURA ---
+        async function processSale() {
+            if (db.cart.length === 0) { alert('El carrito está vacío'); return; }
+            
+            const clientName = document.getElementById('client-name').value;
+            const clientPhone = document.getElementById('client-phone').value;
+            const address = document.getElementById('client-address').value;
+            const total = document.getElementById('cart-total').innerText;
+            const invoiceNum = db.invoiceCounter.toString().padStart(4, '0');
+
+            if(!clientName || !clientPhone) { alert('Nombre y WhatsApp son obligatorios'); return; }
+
+            // 1. Preparar DOM oculto para html2canvas
+            document.getElementById('render-invoice-num').innerText = invoiceNum;
+            document.getElementById('render-client').innerText = clientName;
+            document.getElementById('render-address').innerText = address || 'Tienda física';
+            document.getElementById('render-date').innerText = new Date().toLocaleString();
+            document.getElementById('render-total').innerText = total;
+            
+            const tbody = document.getElementById('render-items');
+            tbody.innerHTML = '';
+            db.cart.forEach(item => {
+                tbody.innerHTML += `
+                    <tr style="border-bottom: 1px solid #eee;">
+                        <td style="padding: 5px 0;">${item.qty}</td>
+                        <td>${item.id}<br><small>${item.name}</small></td>
+                        <td>$${item.currentPrice.toFixed(2)}</td>
+                        <td>$${(item.qty * item.currentPrice).toFixed(2)}</td>
+                    </tr>
+                `;
+            });
+
+            // 2. Descontar Stock
+            db.cart.forEach(item => {
+                const product = db.products.find(p => p.id === item.id);
+                product.stock -= item.qty;
+            });
+
+            // 3. Generar Imagen de Factura
+            const renderDiv = document.getElementById('render-factura');
+            try {
+                const canvas = await html2canvas(renderDiv, { scale: 2 });
+                const imgData = canvas.toDataURL("image/jpeg", 0.9);
+                
+                // Forzar descarga de la imagen (El API web de WhatsApp no permite enviar imágenes por enlace, el cliente debe adjuntarla)
+                const link = document.createElement('a');
+                link.download = `NotaVenta_NoahShop_${invoiceNum}.jpg`;
+                link.href = imgData;
+                link.click();
+
+                // 4. Preparar Mensaje WhatsApp
+                const msg = `*NOAH SHOP - COMPRA EXITOSA* 🛍️\nHola *${clientName}*,\nAdjunto a este chat enviaremos la imagen de su Nota de Venta #${invoiceNum}.\nTotal cancelado: *$${total}*.\n\n¡Gracias por preferirnos!`;
+                const cleanPhone = clientPhone.replace(/\D/g, ''); // Limpiar símbolos
+                const waUrl = `https://wa.me/58${cleanPhone.substring(cleanPhone.length - 10)}?text=${encodeURIComponent(msg)}`;
+                
+                // 5. Finalizar
+                db.invoiceCounter++;
+                saveData();
+                db.cart = [];
+                
+                // Limpiar formulario UI
+                document.getElementById('client-name').value = '';
+                document.getElementById('client-phone').value = '';
+                document.getElementById('client-address').value = '';
+                
+                renderCart();
+                renderProducts(); // Refresca stocks
+                
+                // Abrir WhatsApp en nueva pestaña
+                window.open(waUrl, '_blank');
+
+            } catch (error) {
+                console.error("Error generando factura:", error);
+                alert("Hubo un error generando la factura.");
+            }
+        }
+
+        // --- 5. ALMACÉN Y REPORTES ---
+        function renderAlmacen() {
+            const tbody = document.getElementById('inventory-table');
+            tbody.innerHTML = '';
+            db.products.forEach(p => {
+                tbody.innerHTML += `
+                    <tr>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${p.id}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${p.name}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${p.category}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm ${p.stock <= 6 ? 'text-red-600 font-bold' : 'text-gray-500'}">${p.stock}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">$${p.price.toFixed(2)}</td>
+                    </tr>
+                `;
+            });
+        }
+
+        function downloadExcel(type) {
+            if(type === 'almacen') {
+                const ws = XLSX.utils.json_to_sheet(db.products);
+                const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws, "Stock");
+                XLSX.writeFile(wb, `NoahShop_Almacen_${new Date().toLocaleDateString()}.xlsx`);
+            }
+        }
+
+        // Initialize
+        renderProducts();
+    </script>
 </body>
 </html>
