@@ -1,374 +1,465 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-  <title>NOAH SHOP | POS Profesional</title>
-  <!-- Tailwind CSS + Bootstrap (combinación ligera) + Font Awesome + Librerías necesarias -->
-  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-  <!-- Chart.js, SheetJS, html2canvas -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-  <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-  <style>
-    /* Transiciones suaves y estilos adicionales */
-    body {
-      background: #f4f7fc;
-      font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-    }
-    .card-modern {
-      background: white;
-      border-radius: 1.5rem;
-      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.02);
-      transition: all 0.2s ease;
-    }
-    .nav-btn-active {
-      background-color: #1e3a8a !important;
-      color: white !important;
-      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-    }
-    .stock-bajo {
-      color: #dc2626;
-      font-weight: 600;
-    }
-    .table-elegant th {
-      background-color: #f8fafc;
-      font-weight: 600;
-      color: #1e293b;
-    }
-    .btn-outline-saas {
-      border-radius: 40px;
-      transition: all 0.2s;
-    }
-    .badge-gold {
-      background: #fbbf24;
-      color: #1e293b;
-    }
-    .watermark-factura {
-      position: relative;
-      overflow: hidden;
-    }
-    .watermark-factura:after {
-      content: "NOTA DE VENTA";
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%) rotate(-25deg);
-      font-size: 42px;
-      font-weight: bold;
-      color: rgba(0,0,0,0.08);
-      pointer-events: none;
-      white-space: nowrap;
-      z-index: 0;
-    }
-    @media (max-width: 768px) {
-      .responsive-grid {
-        grid-template-columns: 1fr;
-      }
-      .nav-scroll {
-        overflow-x: auto;
-        white-space: nowrap;
-        flex-wrap: nowrap;
-      }
-    }
-    .scroll-custom::-webkit-scrollbar {
-      width: 6px;
-      height: 6px;
-    }
-  </style>
+<meta charset="UTF-8">
+<title>Noah Shop POS</title>
+
+<meta name="viewport" content="width=device-width,initial-scale=1">
+
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+<style>
+
+body{
+background:#f4f6f9;
+font-family:system-ui;
+}
+
+.topbar{
+background:#111827;
+color:white;
+padding:10px;
+display:flex;
+align-items:center;
+}
+
+.logo{
+font-size:20px;
+font-weight:bold;
+}
+
+.nav-btn{
+margin-right:10px;
+cursor:pointer;
+}
+
+.section{
+display:none;
+}
+
+.section.active{
+display:block;
+}
+
+.product-card{
+border:1px solid #ddd;
+padding:10px;
+border-radius:8px;
+background:white;
+}
+
+.low-stock{
+color:red;
+font-weight:bold;
+}
+
+.cart{
+background:white;
+padding:15px;
+border-radius:8px;
+}
+
+.footer{
+text-align:center;
+margin-top:40px;
+font-size:14px;
+color:#555;
+}
+
+</style>
+
 </head>
-<body class="antialiased">
 
-<div class="container-fluid px-3 px-md-4 py-3 max-w-7xl mx-auto">
-  <!-- Header con logo y nombre -->
-  <div class="flex flex-wrap justify-between items-center mb-4 border-b pb-3">
-    <div class="flex items-center gap-3">
-      <i class="fas fa-tshirt text-3xl text-blue-800"></i>
-      <div>
-        <h1 class="text-2xl font-bold tracking-tight text-gray-800">NOAH SHOP</h1>
-        <p class="text-xs text-gray-500">Ropa al detal y mayor | Valencia, Carabobo | ☎ 0412-8517800</p>
-      </div>
-    </div>
-    <div class="text-sm text-gray-500 hidden md:block"><i class="fas fa-store"></i> POS empresarial premium</div>
-  </div>
+<body>
 
-  <!-- Barra de navegación superior (tabs) -->
-  <div class="nav-scroll flex flex-nowrap gap-2 pb-2 mb-5 overflow-x-auto">
-    <button data-modulo="ventas" class="modulo-btn px-4 py-2 rounded-full bg-white shadow-sm text-gray-700 font-medium hover:bg-gray-100 transition flex items-center gap-2"><i class="fas fa-cash-register"></i> Ventas</button>
-    <button data-modulo="almacen" class="modulo-btn px-4 py-2 rounded-full bg-white shadow-sm text-gray-700 font-medium hover:bg-gray-100 transition flex items-center gap-2"><i class="fas fa-boxes"></i> Almacén</button>
-    <button data-modulo="fiados" class="modulo-btn px-4 py-2 rounded-full bg-white shadow-sm text-gray-700 font-medium hover:bg-gray-100 transition flex items-center gap-2"><i class="fas fa-hand-holding-usd"></i> Fiados</button>
-    <button data-modulo="reportes" class="modulo-btn px-4 py-2 rounded-full bg-white shadow-sm text-gray-700 font-medium hover:bg-gray-100 transition flex items-center gap-2"><i class="fas fa-chart-line"></i> Cierre / Reportes</button>
-    <button data-modulo="clientes" class="modulo-btn px-4 py-2 rounded-full bg-white shadow-sm text-gray-700 font-medium hover:bg-gray-100 transition flex items-center gap-2"><i class="fas fa-users"></i> Clientes</button>
-    <button data-modulo="proveedores" class="modulo-btn px-4 py-2 rounded-full bg-white shadow-sm text-gray-700 font-medium hover:bg-gray-100 transition flex items-center gap-2"><i class="fas fa-truck"></i> Proveedores</button>
-    <button data-modulo="apartados" class="modulo-btn px-4 py-2 rounded-full bg-white shadow-sm text-gray-700 font-medium hover:bg-gray-100 transition flex items-center gap-2"><i class="fas fa-clock"></i> Apartados</button>
-    <button data-modulo="encargos" class="modulo-btn px-4 py-2 rounded-full bg-white shadow-sm text-gray-700 font-medium hover:bg-gray-100 transition flex items-center gap-2"><i class="fas fa-clipboard-list"></i> Encargos</button>
-    <button data-modulo="inventario" class="modulo-btn px-4 py-2 rounded-full bg-white shadow-sm text-gray-700 font-medium hover:bg-gray-100 transition flex items-center gap-2"><i class="fas fa-history"></i> Inventario</button>
-  </div>
+<div class="topbar">
 
-  <!-- CONTENEDOR DINÁMICO DE MÓDULOS -->
-  <div id="contenidoModulo" class="card-modern p-4 p-md-5">
-    <!-- JS carga contenido -->
-    <div class="text-center py-10"><i class="fas fa-spinner fa-spin text-3xl text-blue-600"></i><p>Cargando sistema...</p></div>
-  </div>
+<div class="logo me-4">Noah Shop</div>
 
-  <!-- Footer -->
-  <footer class="mt-10 text-center text-xs text-gray-400 border-t pt-4">
-    Sistema desarrollado por <span class="font-semibold">Nexus Marketing</span> 📱 0424-4525765 | POS Profesional NOAH SHOP
-  </footer>
+<div class="nav-btn" onclick="openSection('ventas')">
+<i class="fa fa-cash-register"></i> Ventas
+</div>
+
+<div class="nav-btn" onclick="openSection('almacen')">
+<i class="fa fa-box"></i> Almacén
+</div>
+
+<div class="nav-btn" onclick="openSection('fiados')">
+<i class="fa fa-credit-card"></i> Fiados
+</div>
+
+<div class="nav-btn" onclick="openSection('reportes')">
+<i class="fa fa-chart-bar"></i> Reportes
+</div>
+
+<div class="nav-btn" onclick="openSection('clientes')">
+<i class="fa fa-users"></i> Clientes
+</div>
+
+<div class="nav-btn" onclick="openSection('proveedores')">
+<i class="fa fa-truck"></i> Proveedores
+</div>
+
+<div class="nav-btn" onclick="openSection('apartados')">
+<i class="fa fa-lock"></i> Apartados
+</div>
+
+<div class="nav-btn" onclick="openSection('encargos')">
+<i class="fa fa-list"></i> Encargos
+</div>
+
+<div class="nav-btn" onclick="openSection('inventario')">
+<i class="fa fa-warehouse"></i> Inventario
+</div>
+
+</div>
+
+<div class="container mt-4">
+
+<div id="ventas" class="section active">
+
+<h3>Ventas</h3>
+
+<input class="form-control mb-3" placeholder="Buscar producto..." onkeyup="buscarProducto(this.value)">
+
+<div id="productos" class="row"></div>
+
+<hr>
+
+<div class="cart">
+
+<h4>Nota de Venta</h4>
+
+<input id="clienteNombre" class="form-control mb-2" placeholder="Nombre del cliente">
+
+<input id="clienteTelefono" class="form-control mb-2" placeholder="WhatsApp">
+
+<input id="vendedor" class="form-control mb-2" placeholder="Nombre vendedor">
+
+<table class="table">
+
+<thead>
+
+<tr>
+<th>Producto</th>
+<th>Cant</th>
+<th>Precio</th>
+<th>Total</th>
+<th></th>
+</tr>
+
+</thead>
+
+<tbody id="cartTable"></tbody>
+
+</table>
+
+<h4>Total $ <span id="totalVenta">0</span></h4>
+
+<button class="btn btn-success" onclick="concretarVenta()">
+Concretar Venta
+</button>
+
+<button class="btn btn-danger" onclick="anularVenta()">
+Anular Venta
+</button>
+
+</div>
+
+</div>
+
+<div id="almacen" class="section">
+
+<h3>Almacén</h3>
+
+<input id="prodNombre" class="form-control mb-2" placeholder="Nombre producto">
+
+<input id="prodPrecio" class="form-control mb-2" placeholder="Precio">
+
+<input id="prodStock" class="form-control mb-2" placeholder="Stock">
+
+<button class="btn btn-primary" onclick="agregarProducto()">Agregar Producto</button>
+
+<hr>
+
+<table class="table">
+
+<thead>
+
+<tr>
+<th>Código</th>
+<th>Producto</th>
+<th>Stock</th>
+<th>Precio</th>
+</tr>
+
+</thead>
+
+<tbody id="tablaAlmacen"></tbody>
+
+</table>
+
+</div>
+
+<div id="reportes" class="section">
+
+<h3>Reportes</h3>
+
+<canvas id="graficoVentas"></canvas>
+
+<button class="btn btn-success mt-3" onclick="descargarExcel()">
+Descargar Excel
+</button>
+
+</div>
+
+</div>
+
+<div class="footer">
+
+Agradecimientos a Nexus Marketing  
+04244525765
+
 </div>
 
 <script>
-  // ------------------------- MODELO DE DATOS Y LOCALSTORAGE -------------------------
-  let DB = {
-    productos: [],      // { id, codigo, nombre, categoria, stock, precio, fechaIngreso, fotoUrl (opcional) }
-    clientes: [],      // { id, nombre, telefono, direccion, direccionRef, historialCompras: [], pagos: [], deudaPendiente }
-    ventas: [],        // { idFactura, numeroFactura, fecha, cliente, productosVendidos, total, metodoPago, vendedor }
-    fiados: [],        // { id, clienteId, clienteNombre, telefono, deudaTotal, deudaRestante, productosDetalle, estado, fechaRegistro, pagosHistorial }
-    proveedores: [],   // { id, nombre, telefono, direccion, comprasRealizadas: [], deudaActual }
-    apartados: [],     // { id, clienteNombre, direccion, telefono, productos, fecha, total, estado }
-    encargos: [],      // { id, fecha, nombre, apellido, telefono, productosPedido, estado }
-    movimientosInventario: [] // { id, articulo, tipo("ingreso"/"egreso"), cantidad, fecha, stockEsperado }
-  };
 
-  let nextFacturaNum = 1;
-  let carrito = []; // { productoId, nombre, cantidad, precioUnitario, codigo }
-  let currentVentaCliente = { nombre: "", direccion: "", direccionRef: "", telefono: "" };
-  let vendedorActual = "Administrador";
+let productos=JSON.parse(localStorage.getItem("productos"))||[]
+let ventas=JSON.parse(localStorage.getItem("ventas"))||[]
+let carrito=[]
 
-  // Helper: inicializar datos demo
-  function initData() {
-    if(!localStorage.getItem('noah_pos_db')) {
-      const prodDemo = [
-        { id: "p1", codigo: "CAM001", nombre: "Camisa Polo", categoria: "Camisas", stock: 12, precio: 25.00, fechaIngreso: new Date().toISOString() },
-        { id: "p2", codigo: "PAN002", nombre: "Jeans Slim", categoria: "Pantalones", stock: 5, precio: 42.50, fechaIngreso: new Date().toISOString() },
-        { id: "p3", codigo: "CHA003", nombre: "Chaqueta Cuero", categoria: "Chaquetas", stock: 3, precio: 89.99, fechaIngreso: new Date().toISOString() },
-        { id: "p4", codigo: "ZAP004", nombre: "Zapatos Casual", categoria: "Calzado", stock: 8, precio: 55.00, fechaIngreso: new Date().toISOString() }
-      ];
-      DB.productos = prodDemo;
-      DB.clientes = [];
-      DB.ventas = [];
-      DB.fiados = [];
-      DB.proveedores = [];
-      DB.apartados = [];
-      DB.encargos = [];
-      DB.movimientosInventario = prodDemo.map(p => ({ id: crypto.randomUUID(), articulo: p.nombre, tipo: "ingreso", cantidad: p.stock, fecha: new Date().toISOString(), stockEsperado: p.stock }));
-      localStorage.setItem('noah_pos_db', JSON.stringify(DB));
-      localStorage.setItem('nextFacturaNum', '1');
-    } else {
-      Object.assign(DB, JSON.parse(localStorage.getItem('noah_pos_db')));
-    }
-    let storedFactura = localStorage.getItem('nextFacturaNum');
-    if(storedFactura) nextFacturaNum = parseInt(storedFactura);
-    else nextFacturaNum = DB.ventas.length + 1;
-  }
+function guardar(){
+localStorage.setItem("productos",JSON.stringify(productos))
+localStorage.setItem("ventas",JSON.stringify(ventas))
+}
 
-  function saveToLocal() {
-    localStorage.setItem('noah_pos_db', JSON.stringify({ productos: DB.productos, clientes: DB.clientes, ventas: DB.ventas, fiados: DB.fiados, proveedores: DB.proveedores, apartados: DB.apartados, encargos: DB.encargos, movimientosInventario: DB.movimientosInventario }));
-    localStorage.setItem('nextFacturaNum', nextFacturaNum.toString());
-  }
+function openSection(id){
 
-  // registrar movimiento inventario
-  function registrarMovimiento(articulo, tipo, cantidad, stockEsperado) {
-    DB.movimientosInventario.push({ id: crypto.randomUUID(), articulo, tipo, cantidad, fecha: new Date().toISOString(), stockEsperado });
-    saveToLocal();
-  }
+document.querySelectorAll(".section")
+.forEach(s=>s.classList.remove("active"))
 
-  // actualizar stock producto
-  function ajustarStock(productoId, cantidadCambio, tipoMov) {
-    let prod = DB.productos.find(p => p.id === productoId);
-    if(prod) {
-      let oldStock = prod.stock;
-      prod.stock += cantidadCambio;
-      if(prod.stock < 0) prod.stock = 0;
-      registrarMovimiento(prod.nombre, tipoMov, Math.abs(cantidadCambio), prod.stock);
-      saveToLocal();
-    }
-  }
+document.getElementById(id).classList.add("active")
 
-  // sincronizar cliente
-  function registrarClienteSiNoExiste(nombre, telefono, direccion, direccionRef) {
-    let existente = DB.clientes.find(c => c.telefono === telefono && c.nombre.toLowerCase() === nombre.toLowerCase());
-    if(!existente && nombre.trim() !== "") {
-      let nuevo = { id: crypto.randomUUID(), nombre, telefono, direccion, direccionRef, historialCompras: [], pagos: [], deudaPendiente: 0 };
-      DB.clientes.push(nuevo);
-      saveToLocal();
-      return nuevo;
-    } else if(existente) {
-      if(direccion) existente.direccion = direccion;
-      if(direccionRef) existente.direccionRef = direccionRef;
-      saveToLocal();
-      return existente;
-    }
-    return existente;
-  }
+}
 
-  // renderizado principal: módulos
-  let currentModule = "ventas";
-  function renderModule(module) {
-    currentModule = module;
-    const container = document.getElementById('contenidoModulo');
-    if(module === 'ventas') renderVentas(container);
-    else if(module === 'almacen') renderAlmacen(container);
-    else if(module === 'fiados') renderFiados(container);
-    else if(module === 'reportes') renderReportes(container);
-    else if(module === 'clientes') renderClientes(container);
-    else if(module === 'proveedores') renderProveedores(container);
-    else if(module === 'apartados') renderApartados(container);
-    else if(module === 'encargos') renderEncargos(container);
-    else if(module === 'inventario') renderInventario(container);
-  }
+function agregarProducto(){
 
-  // ------------------- VENTAS (Core) -------------------
-  function renderVentas(container) {
-    let html = `<div class="grid md:grid-cols-2 gap-6"><div><h3 class="font-bold text-xl"><i class="fas fa-search"></i> Productos</h3><input type="text" id="buscadorProductos" class="form-control mb-3" placeholder="Buscar producto..."><div id="listaProductosVentas" class="max-h-96 overflow-y-auto space-y-2"></div></div><div><h3 class="font-bold text-xl">Carrito / Nota de Venta</h3>
-    <div class="bg-gray-50 p-3 rounded-lg"><div class="grid grid-cols-2 gap-2 text-sm"><input type="text" id="facturaNumero" class="form-control" placeholder="N° Factura" value="${nextFacturaNum}"><input type="text" id="clienteNombre" class="form-control" placeholder="Cliente"><input type="text" id="clienteDireccion" placeholder="Dirección"><input type="text" id="clienteDirRef" placeholder="Dirección Referencial"><input type="text" id="clienteTelefono" placeholder="Teléfono WhatsApp"></div>
-    <input type="text" id="vendedorName" class="form-control mt-2" placeholder="Vendedor" value="${vendedorActual}">
-    <select id="metodoPago" class="form-select mt-2"><option>efectivo</option><option>pago móvil</option><option>divisas</option><option>biopago</option><option>transferencia</option><option>fiado crédito</option><option>Binance</option><option>apartado</option></select>
-    <div id="carritoItems" class="mt-3 text-sm max-h-60 overflow-auto"></div>
-    <div class="mt-3 font-bold">Total: $<span id="totalCarrito">0.00</span></div>
-    <div class="flex flex-wrap gap-2 mt-3"><button id="btnAnularVenta" class="btn btn-outline-danger btn-sm"><i class="fas fa-trash-alt"></i> Anular Venta</button><button id="btnConcretarVenta" class="btn btn-primary"><i class="fas fa-check-circle"></i> Concretar Venta</button></div></div></div></div>`;
-    container.innerHTML = html;
-    actualizarListaProductosVentas();
-    actualizarCarritoUI();
-    document.getElementById('buscadorProductos')?.addEventListener('input', () => actualizarListaProductosVentas());
-    document.getElementById('btnAnularVenta')?.addEventListener('click', anularVentaCompleta);
-    document.getElementById('btnConcretarVenta')?.addEventListener('click', concretarVenta);
-    document.getElementById('facturaNumero')?.addEventListener('change', (e) => { let val = parseInt(e.target.value); if(val && !DB.ventas.some(v=>v.numeroFactura===val)) nextFacturaNum=val; else if(DB.ventas.some(v=>v.numeroFactura===val)) alert("Número de factura ya existe, elija otro"); e.target.value=nextFacturaNum; });
-  }
+let nombre=document.getElementById("prodNombre").value
+let precio=parseFloat(document.getElementById("prodPrecio").value)
+let stock=parseInt(document.getElementById("prodStock").value)
 
-  function actualizarListaProductosVentas() {
-    let search = document.getElementById('buscadorProductos')?.value.toLowerCase() || "";
-    let filtered = DB.productos.filter(p => p.nombre.toLowerCase().includes(search) || p.codigo.toLowerCase().includes(search));
-    let div = document.getElementById('listaProductosVentas');
-    if(div) div.innerHTML = filtered.map(p => `<div class="border p-2 rounded-lg flex justify-between items-center ${p.stock<=6 ? 'bg-red-50' : ''}"><div><span class="font-semibold">${p.nombre}</span> <span class="text-xs text-gray-500">(${p.codigo})</span><div class="text-sm">Stock: <span class="${p.stock<=6?'text-red-600 font-bold':''}">${p.stock}</span> | $${p.precio}</div></div><div class="flex gap-1"><input type="number" id="cant-${p.id}" value="1" class="w-16 form-control form-control-sm"><button class="btn btn-sm btn-outline-primary agregarProducto" data-id="${p.id}" data-precio="${p.precio}" data-nombre="${p.nombre}" data-codigo="${p.codigo}"><i class="fas fa-cart-plus"></i></button></div></div>`).join('');
-    document.querySelectorAll('.agregarProducto').forEach(btn => btn.addEventListener('click', (e) => {
-      let id = btn.dataset.id, precio = parseFloat(btn.dataset.precio), nombre = btn.dataset.nombre, codigo = btn.dataset.codigo;
-      let cantidad = parseInt(document.getElementById(`cant-${id}`)?.value || 1);
-      if(cantidad>0) agregarAlCarrito(id, nombre, cantidad, precio, codigo);
-    }));
-  }
+let codigo="P"+Date.now()
 
-  function agregarAlCarrito(id, nombre, cantidad, precio, codigo) {
-    let prod = DB.productos.find(p=>p.id===id);
-    if(!prod || prod.stock < cantidad) { alert(`Stock insuficiente. Disponible: ${prod?.stock||0}`); return; }
-    let existente = carrito.find(i=>i.productoId===id);
-    if(existente) existente.cantidad += cantidad;
-    else carrito.push({ productoId: id, nombre, cantidad, precioUnitario: precio, codigo });
-    actualizarCarritoUI();
-  }
+productos.push({codigo,nombre,precio,stock})
 
-  function actualizarCarritoUI() {
-    let container = document.getElementById('carritoItems');
-    if(!container) return;
-    let total = 0;
-    container.innerHTML = carrito.map((item, idx) => { total += item.cantidad * item.precioUnitario; return `<div class="flex justify-between items-center border-b py-1"><span>${item.nombre} x${item.cantidad}</span><span>$${(item.cantidad*item.precioUnitario).toFixed(2)}</span><div><input type="number" class="w-14 form-control-sm edit-cant" data-idx="${idx}" value="${item.cantidad}"><input type="number" step="0.01" class="w-20 form-control-sm edit-price" data-idx="${idx}" value="${item.precioUnitario}"><button class="btn btn-sm btn-danger remove-item" data-idx="${idx}"><i class="fas fa-times"></i></button></div></div>`; }).join('');
-    document.getElementById('totalCarrito').innerText = total.toFixed(2);
-    document.querySelectorAll('.edit-cant').forEach(inp => inp.addEventListener('change', (e) => { let idx = e.target.dataset.idx; let newCant = parseInt(e.target.value); if(newCant>0) carrito[idx].cantidad = newCant; else carrito.splice(idx,1); actualizarCarritoUI(); }));
-    document.querySelectorAll('.edit-price').forEach(inp => inp.addEventListener('change', (e) => { let idx = e.target.dataset.idx; carrito[idx].precioUnitario = parseFloat(e.target.value); actualizarCarritoUI(); }));
-    document.querySelectorAll('.remove-item').forEach(btn => btn.addEventListener('click', (e) => { let idx = btn.dataset.idx; carrito.splice(idx,1); actualizarCarritoUI(); }));
-  }
+guardar()
 
-  function anularVentaCompleta() {
-    if(carrito.length===0) return;
-    carrito.forEach(item => { ajustarStock(item.productoId, +item.cantidad, "ingreso"); });
-    carrito = [];
-    actualizarCarritoUI();
-    alert("Venta anulada, stock restaurado");
-  }
+renderProductos()
+renderAlmacen()
 
-  async function concretarVenta() {
-    if(carrito.length===0){ alert("Carrito vacío"); return; }
-    let numeroFactura = parseInt(document.getElementById('facturaNumero')?.value);
-    if(DB.ventas.some(v=>v.numeroFactura===numeroFactura)){ alert("Factura duplicada, cambie el número"); return; }
-    let clienteNom = document.getElementById('clienteNombre')?.value.trim() || "Consumidor Final";
-    let telefono = document.getElementById('clienteTelefono')?.value.trim() || "";
-    let direccion = document.getElementById('clienteDireccion')?.value || "";
-    let dirRef = document.getElementById('clienteDirRef')?.value || "";
-    let metodo = document.getElementById('metodoPago')?.value;
-    let vendedor = document.getElementById('vendedorName')?.value || "Admin";
-    let total = carrito.reduce((acc, i)=> acc + (i.cantidad * i.precioUnitario),0);
-    let clienteReg = registrarClienteSiNoExiste(clienteNom, telefono, direccion, dirRef);
-    // Verificar stock final
-    for(let item of carrito) { let prod = DB.productos.find(p=>p.id===item.productoId); if(prod.stock < item.cantidad) { alert(`Stock insuficiente para ${item.nombre}`); return; } }
-    // Descontar stock
-    for(let item of carrito) ajustarStock(item.productoId, -item.cantidad, "egreso");
-    let ventaObj = { idFactura: crypto.randomUUID(), numeroFactura, fecha: new Date().toISOString(), cliente: clienteNom, productosVendidos: carrito.map(i=>({nombre:i.nombre, cantidad:i.cantidad, precio:i.precioUnitario})), total, metodoPago: metodo, vendedor };
-    DB.ventas.push(ventaObj);
-    if(clienteReg) { clienteReg.historialCompras.push(ventaObj); saveToLocal(); }
-    if(metodo === "fiado crédito") {
-      let deudaNueva = { id: crypto.randomUUID(), clienteId: clienteReg?.id || "anon", clienteNombre: clienteNom, telefono, deudaTotal: total, deudaRestante: total, productosDetalle: carrito.map(i=>`${i.nombre} x${i.cantidad}`), estado:"pendiente", fechaRegistro: new Date().toISOString(), pagosHistorial:[] };
-      DB.fiados.push(deudaNueva);
-      if(clienteReg) clienteReg.deudaPendiente = (clienteReg.deudaPendiente||0)+total;
-      saveToLocal();
-    } else if(metodo === "apartado") {
-      let apartado = { id: crypto.randomUUID(), clienteNombre: clienteNom, direccion, telefono, productos: carrito.map(i=>({nombre:i.nombre, cantidad:i.cantidad, precio:i.precioUnitario})), fecha: new Date().toISOString(), total, estado:"apartado" };
-      DB.apartados.push(apartado);
-      saveToLocal();
-    }
-    // Generar factura imagen y whatsapp
-    await generarFacturaImagenYWhatsApp(ventaObj, clienteNom, telefono, total, carrito, numeroFactura);
-    // Limpiar carrito y reset cliente
-    carrito = [];
-    actualizarCarritoUI();
-    document.getElementById('clienteNombre').value = "";
-    document.getElementById('clienteTelefono').value = "";
-    document.getElementById('clienteDireccion').value = "";
-    nextFacturaNum++;
-    document.getElementById('facturaNumero').value = nextFacturaNum;
-    saveToLocal();
-    alert("Venta completada, factura generada");
-  }
+}
 
-  async function generarFacturaImagenYWhatsApp(ventaObj, cliente, telefono, total, items, numFactura) {
-    let facturaDiv = document.createElement('div');
-    facturaDiv.className = "watermark-factura p-4 bg-white rounded-lg shadow-lg max-w-md";
-    facturaDiv.innerHTML = `<div class="text-center border-b pb-2"><h2 class="font-bold">NOAH SHOP</h2><p>Ropa al detal y mayor<br>Valencia Estado Carabobo<br>Tel: 0412-8517800</p><p>Factura N°: ${numFactura} | Fecha: ${new Date().toLocaleString()}</p></div><div><p><strong>Cliente:</strong> ${cliente} ${telefono? 'Tel: '+telefono:''}</p><p><strong>Vendedor:</strong> ${ventaObj.vendedor}</p><table class="w-full text-sm mt-2"><thead><tr><th>Producto</th><th>Cant</th><th>Precio</th><th>Subtotal</th></tr></thead><tbody>${items.map(i=>`<tr><td>${i.nombre}</td><td>${i.cantidad}</td><td>$${i.precioUnitario.toFixed(2)}</td><td>$${(i.cantidad*i.precioUnitario).toFixed(2)}</td></tr>`).join('')}</tbody></table><div class="text-right font-bold mt-2">Total: $${total.toFixed(2)}</div><div class="text-xs text-center mt-4">Código único: ${ventaObj.idFactura.slice(0,8)}</div></div>`;
-    document.body.appendChild(facturaDiv);
-    let canvas = await html2canvas(facturaDiv, { scale: 2 });
-    let imgData = canvas.toDataURL('image/png');
-    let link = document.createElement('a');
-    link.download = `factura_${numFactura}.png`;
-    link.href = imgData;
-    link.click();
-    if(telefono && telefono.trim() !== "") {
-      let whatsUrl = `https://wa.me/${telefono.replace(/[^0-9]/g, '')}?text=¡Gracias por tu compra en NOAH SHOP! Adjunto tu factura en la imagen descargada. Total: $${total.toFixed(2)}`;
-      window.open(whatsUrl, '_blank');
-    } else alert("Factura generada (imagen descargada). No se pudo abrir WhatsApp sin número.");
-    facturaDiv.remove();
-  }
+function renderProductos(){
 
-  // Almacén, Fiados, etc (abreviado pero funcional)
-  function renderAlmacen(container) { container.innerHTML = `<div><h3><i class="fas fa-warehouse"></i> Gestión Almacén</h3><button class="btn btn-sm btn-success" id="btnAgregarProducto">+ Agregar Producto</button><button class="btn btn-sm btn-info" id="btnDescargarInventarioExcel">📎 Descargar Inventario Excel</button><input type="text" id="filtroCategoria" placeholder="Filtrar por categoría" class="form-control mt-2"><div id="listaProductosAlmacen" class="mt-3"></div></div>`;
-    function cargarProductos() { let filtro = document.getElementById('filtroCategoria')?.value.toLowerCase(); let prods = DB.productos.filter(p=>!filtro||p.categoria.toLowerCase().includes(filtro)); document.getElementById('listaProductosAlmacen').innerHTML = `<table class="table table-sm"><thead><tr><th>Nombre</th><th>Código</th><th>Categoría</th><th>Stock</th><th>Precio $</th><th>Acciones</th></tr></thead><tbody>${prods.map(p=>`<tr><td>${p.nombre}</td><td>${p.codigo}</td><td>${p.categoria}</td><td class="${p.stock<=6?'text-red-600':''}">${p.stock}</td><td>$${p.precio}</td><td><button class="btn btn-sm btn-warning retirarStock" data-id="${p.id}">Retirar</button></td></tr>`).join('')}</tbody></table>`;
-      document.querySelectorAll('.retirarStock').forEach(btn=>btn.addEventListener('click',()=>{ let id=btn.dataset.id; let cant=prompt("Cantidad a retirar (egreso)"); if(cant>0){ ajustarStock(id, -parseInt(cant), "egreso"); cargarProductos(); } }));
-    }
-    document.getElementById('btnAgregarProducto')?.addEventListener('click',()=>{ let nom=prompt("Nombre"); let cat=prompt("Categoría"); let stock=parseInt(prompt("Stock")); let precio=parseFloat(prompt("Precio $")); let newId=crypto.randomUUID(); DB.productos.push({id:newId, codigo:`${nom.slice(0,3)}${Math.floor(Math.random()*1000)}`, nombre:nom, categoria:cat, stock, precio, fechaIngreso:new Date().toISOString()}); registrarMovimiento(nom, "ingreso", stock, stock); saveToLocal(); cargarProductos(); });
-    document.getElementById('btnDescargarInventarioExcel')?.addEventListener('click',()=>{ let ws=XLSX.utils.json_to_sheet(DB.productos.map(p=>({Nombre:p.nombre, Codigo:p.codigo, Categoria:p.categoria, Stock:p.stock, Precio:p.precio}))); let wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,"Inventario"); XLSX.writeFile(wb,"inventario_noah.xlsx"); });
-    document.getElementById('filtroCategoria')?.addEventListener('input',cargarProductos);
-    cargarProductos();
-  }
-  function renderFiados(container) { let deudores = DB.fiados.filter(f=>f.deudaRestante>0); container.innerHTML = `<div><h3>📋 Deudores</h3><button id="descargarFiadosExcel" class="btn btn-sm btn-secondary mb-2">Excel Fiados</button><table class="table"><thead><tr><th>Cliente</th><th>Teléfono</th><th>Deuda Total</th><th>Restante</th><th>Acciones</th></tr></thead><tbody>${deudores.map(f=>`<tr><td>${f.clienteNombre}</td><td>${f.telefono}</td><td>$${f.deudaTotal}</td><td>$${f.deudaRestante}</td><td><button data-id="${f.id}" class="btn btn-sm btn-primary pagarFiado">Pagar</button></td></tr>`).join('')}</tbody></table></div>`;
-    document.querySelectorAll('.pagarFiado').forEach(btn=>btn.addEventListener('click',()=>{ let id=btn.dataset.id; let fiado=DB.fiados.find(f=>f.id===id); let monto=parseFloat(prompt(`Deuda restante $${fiado.deudaRestante}. Monto a pagar:`)); if(monto>0 && monto<=fiado.deudaRestante){ fiado.deudaRestante-=monto; if(fiado.deudaRestante<=0) DB.fiados=DB.fiados.filter(f=>f.id!==id); saveToLocal(); renderFiados(container); } }));
-    document.getElementById('descargarFiadosExcel')?.addEventListener('click',()=>{ let ws=XLSX.utils.json_to_sheet(deudores); let wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,"Fiados"); XLSX.writeFile(wb,"fiados_noah.xlsx"); });
-  }
-  function renderReportes(container) { let ctx = document.createElement('canvas'); let ventasPorDia = {}; DB.ventas.forEach(v=>{ let fecha=v.fecha.split('T')[0]; ventasPorDia[fecha]=(ventasPorDia[fecha]||0)+v.total; }); container.innerHTML = `<div><h3>Reportes y Cierre</h3><canvas id="chartVentas" width="400" height="200"></canvas><button id="excelReporte" class="btn btn-dark mt-2">Descargar Reporte Excel</button></div>`; new Chart(document.getElementById('chartVentas'), { type:'bar', data:{ labels:Object.keys(ventasPorDia), datasets:[{label:'Ventas por día ($)', data:Object.values(ventasPorDia)}] } }); document.getElementById('excelReporte')?.addEventListener('click',()=>{ let ws=XLSX.utils.json_to_sheet(DB.ventas); XLSX.writeFile(XLSX.utils.book_new(),"reporte_ventas.xlsx"); }); }
-  function renderClientes(container) { let searchHtml = `<input id="searchCliente" class="form-control" placeholder="Buscar cliente"><div id="clientesLista"></div>`; container.innerHTML = searchHtml; function cargar() { let search=document.getElementById('searchCliente')?.value.toLowerCase(); let filtered=DB.clientes.filter(c=>c.nombre.toLowerCase().includes(search)); document.getElementById('clientesLista').innerHTML = filtered.map(c=>`<div class="border p-2 my-1 cursor-pointer" data-id="${c.id}"><b>${c.nombre}</b> ${c.telefono} ${c.deudaPendiente>0? `<span class="text-red-600">(Deuda: $${c.deudaPendiente})</span>`:''}</div>`).join(''); document.querySelectorAll('[data-id]').forEach(el=>el.addEventListener('click',()=>{ let cli=DB.clientes.find(c=>c.id===el.dataset.id); alert(`Historial compras: ${cli.historialCompras.length} ventas. Deuda: $${cli.deudaPendiente}`); })); } document.getElementById('searchCliente')?.addEventListener('input',cargar); cargar(); }
-  function renderProveedores(container) { container.innerHTML = `<div><button id="nuevoProveedor" class="btn btn-primary">+ Proveedor</button><div id="listaProveedores"></div></div>`; function cargarProv(){ document.getElementById('listaProveedores').innerHTML = DB.proveedores.map(p=>`<div>${p.nombre} - Deuda: $${p.deudaActual||0} <button class="pagarProv" data-id="${p.id}">Pagar</button></div>`).join(''); document.querySelectorAll('.pagarProv').forEach(b=>b.addEventListener('click',()=>{ let prov=DB.proveedores.find(p=>p.id===b.dataset.id); let pago=parseFloat(prompt("Monto a pagar")); if(pago>0) prov.deudaActual=Math.max(0,(prov.deudaActual||0)-pago); saveToLocal(); cargarProv(); })); } document.getElementById('nuevoProveedor')?.addEventListener('click',()=>{ let nom=prompt("Nombre"); let tel=prompt("Teléfono"); DB.proveedores.push({id:crypto.randomUUID(), nombre:nom, telefono:tel, comprasRealizadas:[], deudaActual:0}); saveToLocal(); cargarProv(); }); cargarProv(); }
-  function renderApartados(container) { let list = DB.apartados.filter(a=>a.estado==="apartado"); container.innerHTML = `<div>${list.map(a=>`<div class="border p-2 mb-2">${a.clienteNombre} - Total: $${a.total} <button class="pagarApartado" data-id="${a.id}">Pagar</button><button class="anularApartado" data-id="${a.id}">Anular</button></div>`).join('')}</div>`; document.querySelectorAll('.pagarApartado').forEach(btn=>btn.addEventListener('click',()=>{ let ap=DB.apartados.find(a=>a.id===btn.dataset.id); ap.estado="pagado"; DB.apartados=DB.apartados.filter(a=>a.id!==ap.id); saveToLocal(); renderApartados(container); alert("Apartado pagado y venta finalizada"); })); document.querySelectorAll('.anularApartado').forEach(btn=>btn.addEventListener('click',()=>{ let ap=DB.apartados.find(a=>a.id===btn.dataset.id); ap.productos.forEach(p=>{ let prod=DB.productos.find(pr=>pr.nombre===p.nombre); if(prod) ajustarStock(prod.id, p.cantidad, "ingreso"); }); DB.apartados=DB.apartados.filter(a=>a.id!==btn.dataset.id); saveToLocal(); renderApartados(container); alert("Apartado anulado, stock devuelto"); })); }
-  function renderEncargos(container) { container.innerHTML = `<div><button id="nuevoEncargo" class="btn btn-success">Nuevo Encargo</button><div id="listaEncargos"></div></div>`; function cargarEncargos(){ document.getElementById('listaEncargos').innerHTML = DB.encargos.map(e=>`<div>${e.nombre} ${e.apellido} - ${e.productosPedido} <button class="concretarEncargo" data-id="${e.id}">Concretar Venta</button><button class="anularEncargo" data-id="${e.id}">Anular</button></div>`).join(''); } document.getElementById('nuevoEncargo')?.addEventListener('click',()=>{ let nombre=prompt("Nombre"); let apellido=prompt("Apellido"); let tel=prompt("Teléfono"); let prod=prompt("Lista productos (ej: Camisa x2)"); DB.encargos.push({id:crypto.randomUUID(), fecha:new Date().toISOString(), nombre, apellido, telefono:tel, productosPedido:prod, estado:"pendiente"}); saveToLocal(); cargarEncargos(); }); cargarEncargos(); }
-  function renderInventario(container) { let movimientos = DB.movimientosInventario; container.innerHTML = `<div><h3>Historial de Movimientos</h3><table class="table table-sm"><thead><tr><th>Artículo</th><th>Tipo</th><th>Cantidad</th><th>Fecha</th><th>Stock Esperado</th></tr></thead><tbody>${movimientos.map(m=>`<tr class="${m.tipo==='ingreso'?'text-blue-600':'text-red-600'}"><td>${m.articulo}</td><td>${m.tipo}</td><td>${m.cantidad}</td><td>${new Date(m.fecha).toLocaleString()}</td><td>${m.stockEsperado}</td></tr>`).join('')}</tbody></table><button id="editarInventarioPass" class="btn btn-warning">Editar movimientos (admin)</button></div>`;
-    document.getElementById('editarInventarioPass')?.addEventListener('click',()=>{ let pass=prompt("Contraseña"); if(pass==="123456") alert("Función de edición habilitada (demo)"); else alert("Contraseña incorrecta"); });
-  }
+let cont=document.getElementById("productos")
 
-  // eventos de navegación
-  document.querySelectorAll('.modulo-btn').forEach(btn => {
-    btn.addEventListener('click', () => { renderModule(btn.dataset.modulo); });
-  });
-  initData();
-  renderModule('ventas');
+cont.innerHTML=""
+
+productos.forEach(p=>{
+
+let alerta=p.stock<=6?"low-stock":""
+
+cont.innerHTML+=`
+
+<div class="col-md-3">
+
+<div class="product-card">
+
+<h5>${p.nombre}</h5>
+
+<p class="${alerta}">Stock: ${p.stock}</p>
+
+<p>$ ${p.precio}</p>
+
+<input type="number" id="cant-${p.codigo}" class="form-control mb-2" placeholder="Cantidad">
+
+<button class="btn btn-primary" onclick="agregarCarrito('${p.codigo}')">
+
+Agregar
+
+</button>
+
+</div>
+
+</div>
+
+`
+
+})
+
+}
+
+function renderAlmacen(){
+
+let t=document.getElementById("tablaAlmacen")
+
+t.innerHTML=""
+
+productos.forEach(p=>{
+
+t.innerHTML+=`
+
+<tr>
+
+<td>${p.codigo}</td>
+<td>${p.nombre}</td>
+<td>${p.stock}</td>
+<td>$${p.precio}</td>
+
+</tr>
+
+`
+
+})
+
+}
+
+function agregarCarrito(codigo){
+
+let cant=parseInt(document.getElementById("cant-"+codigo).value)
+
+let p=productos.find(x=>x.codigo==codigo)
+
+carrito.push({...p,cant})
+
+renderCart()
+
+}
+
+function renderCart(){
+
+let t=document.getElementById("cartTable")
+
+t.innerHTML=""
+
+let total=0
+
+carrito.forEach((c,i)=>{
+
+let sub=c.precio*c.cant
+
+total+=sub
+
+t.innerHTML+=`
+
+<tr>
+
+<td>${c.nombre}</td>
+
+<td>${c.cant}</td>
+
+<td>${c.precio}</td>
+
+<td>${sub}</td>
+
+<td>
+
+<button onclick="eliminarItem(${i})">X</button>
+
+</td>
+
+</tr>
+
+`
+
+})
+
+document.getElementById("totalVenta").innerText=total
+
+}
+
+function eliminarItem(i){
+
+carrito.splice(i,1)
+
+renderCart()
+
+}
+
+function anularVenta(){
+
+carrito=[]
+
+renderCart()
+
+}
+
+function concretarVenta(){
+
+let cliente=document.getElementById("clienteNombre").value
+
+let tel=document.getElementById("clienteTelefono").value
+
+let vendedor=document.getElementById("vendedor").value
+
+let total=0
+
+carrito.forEach(c=>{
+
+let p=productos.find(x=>x.codigo==c.codigo)
+
+p.stock-=c.cant
+
+total+=c.cant*c.precio
+
+})
+
+let venta={
+fecha:new Date(),
+cliente,
+tel,
+vendedor,
+items:carrito,
+total
+}
+
+ventas.push(venta)
+
+guardar()
+
+carrito=[]
+
+renderCart()
+renderProductos()
+renderAlmacen()
+
+alert("Venta registrada")
+
+}
+
+function descargarExcel(){
+
+let ws=XLSX.utils.json_to_sheet(ventas)
+
+let wb=XLSX.utils.book_new()
+
+XLSX.utils.book_append_sheet(wb,ws,"Ventas")
+
+XLSX.writeFile(wb,"ventas_noahshop.xlsx")
+
+}
+
+renderProductos()
+renderAlmacen()
+
 </script>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+
 </body>
 </html>
