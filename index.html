@@ -1,447 +1,374 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-width=1.0">
-    <title>POS Noah Shop | Nexus Marketing</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-    <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
-    
-    <script>
-        tailwind.config = {
-            theme: { extend: { colors: { brand: '#1E3A8A', accent: '#F59E0B' } } }
-        }
-    </script>
-    <style>
-        /* Estilos para ocultar scrollbars pero mantener funcionalidad */
-        .no-scrollbar::-webkit-scrollbar { display: none; }
-        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-        
-        /* Diseño de la Nota de Venta (Oculto en UI, visible para Render) */
-        #render-factura {
-            width: 400px;
-            background: white;
-            padding: 20px;
-            position: absolute;
-            left: -9999px; /* Oculto de la vista */
-            font-family: 'Courier New', Courier, monospace;
-            border: 1px solid #ccc;
-        }
-        .watermark {
-            position: absolute;
-            top: 50%; left: 50%;
-            transform: translate(-50%, -50%) rotate(-45deg);
-            font-size: 4rem; color: rgba(0,0,0,0.05);
-            font-weight: bold; white-space: nowrap; pointer-events: none;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+  <title>NOAH SHOP | POS Profesional</title>
+  <!-- Tailwind CSS + Bootstrap (combinación ligera) + Font Awesome + Librerías necesarias -->
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <!-- Chart.js, SheetJS, html2canvas -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <style>
+    /* Transiciones suaves y estilos adicionales */
+    body {
+      background: #f4f7fc;
+      font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+    }
+    .card-modern {
+      background: white;
+      border-radius: 1.5rem;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.02);
+      transition: all 0.2s ease;
+    }
+    .nav-btn-active {
+      background-color: #1e3a8a !important;
+      color: white !important;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    }
+    .stock-bajo {
+      color: #dc2626;
+      font-weight: 600;
+    }
+    .table-elegant th {
+      background-color: #f8fafc;
+      font-weight: 600;
+      color: #1e293b;
+    }
+    .btn-outline-saas {
+      border-radius: 40px;
+      transition: all 0.2s;
+    }
+    .badge-gold {
+      background: #fbbf24;
+      color: #1e293b;
+    }
+    .watermark-factura {
+      position: relative;
+      overflow: hidden;
+    }
+    .watermark-factura:after {
+      content: "NOTA DE VENTA";
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) rotate(-25deg);
+      font-size: 42px;
+      font-weight: bold;
+      color: rgba(0,0,0,0.08);
+      pointer-events: none;
+      white-space: nowrap;
+      z-index: 0;
+    }
+    @media (max-width: 768px) {
+      .responsive-grid {
+        grid-template-columns: 1fr;
+      }
+      .nav-scroll {
+        overflow-x: auto;
+        white-space: nowrap;
+        flex-wrap: nowrap;
+      }
+    }
+    .scroll-custom::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+  </style>
 </head>
-<body class="bg-gray-50 text-gray-800 font-sans h-screen flex flex-col overflow-hidden">
+<body class="antialiased">
 
-    <header class="bg-brand text-white shadow-md">
-        <div class="px-6 py-3 flex justify-between items-center">
-            <div class="flex items-center gap-3">
-                <img src="https://github.com/jhonmalorne/SistemadeventasNoahShop/blob/main/Noah%20Shop.jpg?raw=true" alt="Noah Shop Logo" class="h-10 w-10 rounded-full bg-white object-cover">
-                <div>
-                    <h1 class="text-xl font-bold tracking-wider">NOAH SHOP</h1>
-                    <p class="text-xs text-gray-300">Ropa al detal y mayor | Tel: 0412-8517800</p>
-                </div>
-            </div>
-            <div class="text-right hidden md:block">
-                <p class="text-sm font-semibold">Correlativo Factura: <span id="ui-correlativo" class="text-accent">#0001</span></p>
-            </div>
-        </div>
-        
-        <nav class="bg-gray-900 overflow-x-auto no-scrollbar">
-            <ul class="flex whitespace-nowrap px-4 py-2 text-sm font-medium">
-                <li><button onclick="nav('ventas')" class="px-4 py-2 hover:bg-gray-700 rounded transition"><i class="fa-solid fa-cart-shopping mr-2"></i>Ventas</button></li>
-                <li><button onclick="nav('almacen')" class="px-4 py-2 hover:bg-gray-700 rounded transition"><i class="fa-solid fa-boxes-stacked mr-2"></i>Almacén</button></li>
-                <li><button onclick="nav('fiados')" class="px-4 py-2 hover:bg-gray-700 rounded transition"><i class="fa-solid fa-hand-holding-dollar mr-2"></i>Fiados</button></li>
-                <li><button onclick="nav('clientes')" class="px-4 py-2 hover:bg-gray-700 rounded transition"><i class="fa-solid fa-users mr-2"></i>Clientes</button></li>
-                <li><button onclick="nav('proveedores')" class="px-4 py-2 hover:bg-gray-700 rounded transition"><i class="fa-solid fa-truck-field mr-2"></i>Proveedores</button></li>
-                <li><button onclick="nav('apartados')" class="px-4 py-2 hover:bg-gray-700 rounded transition"><i class="fa-solid fa-box-open mr-2"></i>Apartados</button></li>
-                <li><button onclick="nav('encargos')" class="px-4 py-2 hover:bg-gray-700 rounded transition"><i class="fa-solid fa-clipboard-list mr-2"></i>Encargos</button></li>
-                <li><button onclick="nav('reportes')" class="px-4 py-2 hover:bg-gray-700 rounded transition"><i class="fa-solid fa-chart-line mr-2"></i>Cierre/Reportes</button></li>
-                <li><button onclick="nav('inventario')" class="px-4 py-2 hover:bg-gray-700 rounded transition text-red-400"><i class="fa-solid fa-lock mr-2"></i>Inventario (Admin)</button></li>
-            </ul>
-        </nav>
-    </header>
-
-    <main class="flex-1 flex overflow-hidden">
-        
-        <section id="view-ventas" class="flex-1 flex w-full">
-            <div class="w-2/3 p-6 overflow-y-auto bg-gray-100">
-                <div class="flex justify-between items-center mb-6">
-                    <h2 class="text-2xl font-bold text-gray-800">Terminal de Ventas</h2>
-                    <div class="relative w-1/2">
-                        <i class="fa-solid fa-search absolute left-3 top-3 text-gray-400"></i>
-                        <input type="text" id="search-product" placeholder="Buscar por código, nombre o categoría..." class="w-full pl-10 pr-4 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-brand shadow-sm" onkeyup="renderProducts()">
-                    </div>
-                </div>
-                <div id="product-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    </div>
-            </div>
-
-            <div class="w-1/3 bg-white shadow-xl flex flex-col border-l">
-                <div class="p-4 bg-gray-50 border-b flex justify-between items-center">
-                    <h3 class="font-bold text-lg"><i class="fa-solid fa-receipt mr-2"></i>Nota de Venta</h3>
-                    <button onclick="clearCart()" class="text-red-500 hover:text-red-700 text-sm"><i class="fa-solid fa-trash mr-1"></i>Anular</button>
-                </div>
-                
-                <div id="cart-items" class="flex-1 overflow-y-auto p-4">
-                    </div>
-
-                <div class="p-4 border-t bg-gray-50">
-                    <div class="flex justify-between mb-2 text-lg font-bold">
-                        <span>Total a Pagar:</span>
-                        <span class="text-green-600">$<span id="cart-total">0.00</span></span>
-                    </div>
-                    
-                    <div class="grid grid-cols-2 gap-2 mb-2">
-                        <input type="text" id="client-name" placeholder="Nombre Cliente" class="border rounded p-2 text-sm w-full">
-                        <input type="text" id="client-phone" placeholder="WhatsApp (Ej: 0412...)" class="border rounded p-2 text-sm w-full">
-                    </div>
-                    <input type="text" id="client-address" placeholder="Dirección referencial" class="border rounded p-2 text-sm w-full mb-2">
-                    
-                    <div class="grid grid-cols-2 gap-2 mb-3">
-                        <select id="payment-method" class="border rounded p-2 text-sm w-full bg-white">
-                            <option value="Pago Movil">Pago Móvil</option>
-                            <option value="Efectivo USD">Efectivo USD</option>
-                            <option value="Biopago">Biopago</option>
-                            <option value="Binance">Binance</option>
-                            <option value="Fiado">Fiado (Crédito)</option>
-                            <option value="Apartado">Apartado</option>
-                        </select>
-                        <input type="text" id="seller-name" placeholder="Vendedor" class="border rounded p-2 text-sm w-full">
-                    </div>
-
-                    <button onclick="processSale()" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-lg shadow-lg transition duration-200">
-                        <i class="fa-brands fa-whatsapp mr-2"></i>Concretar y Enviar Nota
-                    </button>
-                </div>
-            </div>
-        </section>
-
-        <section id="view-almacen" class="flex-1 w-full p-6 bg-gray-100 hidden overflow-y-auto">
-            <div class="flex justify-between items-center mb-6">
-                <h2 class="text-2xl font-bold">Control de Almacén</h2>
-                <button onclick="downloadExcel('almacen')" class="bg-blue-600 text-white px-4 py-2 rounded shadow hover:bg-blue-700"><i class="fa-solid fa-file-excel mr-2"></i>Descargar Stock</button>
-            </div>
-            
-            <div class="bg-white rounded-lg shadow p-4">
-                <table class="min-w-full divide-y divide-gray-200">
-                    <thead class="bg-gray-50">
-                        <tr>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Código</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Descripción</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Categoría</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Stock</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Precio ($)</th>
-                        </tr>
-                    </thead>
-                    <tbody id="inventory-table" class="bg-white divide-y divide-gray-200">
-                        </tbody>
-                </table>
-            </div>
-        </section>
-
-        <section id="view-construccion" class="flex-1 flex justify-center items-center bg-gray-100 hidden">
-            <div class="text-center">
-                <i class="fa-solid fa-person-digging text-6xl text-gray-400 mb-4"></i>
-                <h2 class="text-2xl text-gray-600 font-bold">Módulo en Construcción</h2>
-                <p class="text-gray-500">Selecciona Ventas o Almacén en el menú superior.</p>
-            </div>
-        </section>
-
-    </main>
-
-    <footer class="bg-gray-900 text-gray-400 text-center py-2 text-xs">
-        <p>Sistema POS diseñado para Noah Shop. Desarrollo y UX/UI por <strong>Nexus Marketing (04244525765)</strong></p>
-    </footer>
-
-    <div id="render-factura">
-        <div class="watermark">NOAH SHOP</div>
-        <div style="text-align: center; border-bottom: 2px dashed #000; padding-bottom: 10px; margin-bottom: 10px;">
-            <img src="https://github.com/jhonmalorne/SistemadeventasNoahShop/blob/main/Noah%20Shop.jpg?raw=true" style="width: 60px; border-radius: 50%; margin: 0 auto;">
-            <h2 style="margin: 5px 0;">NOAH SHOP</h2>
-            <p style="font-size: 12px; margin: 0;">Ropa al detal y mayor</p>
-            <p style="font-size: 12px; margin: 0;">Valencia, Edo Carabobo</p>
-            <p style="font-size: 12px; margin: 0;">Tel: 0412-8517800</p>
-            <p style="font-size: 12px; margin: 5px 0 0 0; font-weight: bold;">Nota de Venta: <span id="render-invoice-num"></span></p>
-        </div>
-        <div style="font-size: 12px; margin-bottom: 10px;">
-            <p><strong>Cliente:</strong> <span id="render-client"></span></p>
-            <p><strong>Dirección:</strong> <span id="render-address"></span></p>
-            <p><strong>Fecha:</strong> <span id="render-date"></span></p>
-        </div>
-        <table style="width: 100%; font-size: 12px; text-align: left; border-collapse: collapse;">
-            <thead>
-                <tr style="border-bottom: 1px solid #000;">
-                    <th>Cant</th>
-                    <th>Descripción</th>
-                    <th>P.U ($)</th>
-                    <th>Total</th>
-                </tr>
-            </thead>
-            <tbody id="render-items">
-                </tbody>
-        </table>
-        <div style="text-align: right; margin-top: 15px; font-size: 16px; font-weight: bold;">
-            Total: $<span id="render-total"></span>
-        </div>
-        <div style="text-align: center; font-size: 10px; margin-top: 20px; color: #555;">
-            Gracias por su compra. Sistema por Nexus Marketing.
-        </div>
+<div class="container-fluid px-3 px-md-4 py-3 max-w-7xl mx-auto">
+  <!-- Header con logo y nombre -->
+  <div class="flex flex-wrap justify-between items-center mb-4 border-b pb-3">
+    <div class="flex items-center gap-3">
+      <i class="fas fa-tshirt text-3xl text-blue-800"></i>
+      <div>
+        <h1 class="text-2xl font-bold tracking-tight text-gray-800">NOAH SHOP</h1>
+        <p class="text-xs text-gray-500">Ropa al detal y mayor | Valencia, Carabobo | ☎ 0412-8517800</p>
+      </div>
     </div>
+    <div class="text-sm text-gray-500 hidden md:block"><i class="fas fa-store"></i> POS empresarial premium</div>
+  </div>
 
-    <script>
-        // --- 1. BASE DE DATOS LOCAL (Simulación Módulo Almacén) ---
-        let db = {
-            invoiceCounter: parseInt(localStorage.getItem('invoiceCounter')) || 1,
-            products: JSON.parse(localStorage.getItem('products')) || [
-                { id: 'NS-001', name: 'Jean Dama Skinny', category: 'Damas', stock: 15, price: 12.50 },
-                { id: 'NS-002', name: 'Franela Oversize', category: 'Caballeros', stock: 5, price: 8.00 }, // Stock crítico (<6)
-                { id: 'NS-003', name: 'Conjunto Deportivo', category: 'Niños', stock: 20, price: 15.00 },
-                { id: 'NS-004', name: 'Chaqueta Denim', category: 'Unisex', stock: 8, price: 25.00 }
-            ],
-            cart: []
-        };
+  <!-- Barra de navegación superior (tabs) -->
+  <div class="nav-scroll flex flex-nowrap gap-2 pb-2 mb-5 overflow-x-auto">
+    <button data-modulo="ventas" class="modulo-btn px-4 py-2 rounded-full bg-white shadow-sm text-gray-700 font-medium hover:bg-gray-100 transition flex items-center gap-2"><i class="fas fa-cash-register"></i> Ventas</button>
+    <button data-modulo="almacen" class="modulo-btn px-4 py-2 rounded-full bg-white shadow-sm text-gray-700 font-medium hover:bg-gray-100 transition flex items-center gap-2"><i class="fas fa-boxes"></i> Almacén</button>
+    <button data-modulo="fiados" class="modulo-btn px-4 py-2 rounded-full bg-white shadow-sm text-gray-700 font-medium hover:bg-gray-100 transition flex items-center gap-2"><i class="fas fa-hand-holding-usd"></i> Fiados</button>
+    <button data-modulo="reportes" class="modulo-btn px-4 py-2 rounded-full bg-white shadow-sm text-gray-700 font-medium hover:bg-gray-100 transition flex items-center gap-2"><i class="fas fa-chart-line"></i> Cierre / Reportes</button>
+    <button data-modulo="clientes" class="modulo-btn px-4 py-2 rounded-full bg-white shadow-sm text-gray-700 font-medium hover:bg-gray-100 transition flex items-center gap-2"><i class="fas fa-users"></i> Clientes</button>
+    <button data-modulo="proveedores" class="modulo-btn px-4 py-2 rounded-full bg-white shadow-sm text-gray-700 font-medium hover:bg-gray-100 transition flex items-center gap-2"><i class="fas fa-truck"></i> Proveedores</button>
+    <button data-modulo="apartados" class="modulo-btn px-4 py-2 rounded-full bg-white shadow-sm text-gray-700 font-medium hover:bg-gray-100 transition flex items-center gap-2"><i class="fas fa-clock"></i> Apartados</button>
+    <button data-modulo="encargos" class="modulo-btn px-4 py-2 rounded-full bg-white shadow-sm text-gray-700 font-medium hover:bg-gray-100 transition flex items-center gap-2"><i class="fas fa-clipboard-list"></i> Encargos</button>
+    <button data-modulo="inventario" class="modulo-btn px-4 py-2 rounded-full bg-white shadow-sm text-gray-700 font-medium hover:bg-gray-100 transition flex items-center gap-2"><i class="fas fa-history"></i> Inventario</button>
+  </div>
 
-        // Guardar datos en local
-        function saveData() {
-            localStorage.setItem('products', JSON.stringify(db.products));
-            localStorage.setItem('invoiceCounter', db.invoiceCounter);
-        }
+  <!-- CONTENEDOR DINÁMICO DE MÓDULOS -->
+  <div id="contenidoModulo" class="card-modern p-4 p-md-5">
+    <!-- JS carga contenido -->
+    <div class="text-center py-10"><i class="fas fa-spinner fa-spin text-3xl text-blue-600"></i><p>Cargando sistema...</p></div>
+  </div>
 
-        // --- 2. NAVEGACIÓN ---
-        function nav(viewName) {
-            const views = ['view-ventas', 'view-almacen', 'view-construccion'];
-            views.forEach(v => document.getElementById(v)?.classList.add('hidden'));
-            
-            if(viewName === 'ventas') {
-                document.getElementById('view-ventas').classList.remove('hidden');
-                renderProducts();
-            } else if(viewName === 'almacen') {
-                document.getElementById('view-almacen').classList.remove('hidden');
-                renderAlmacen();
-            } else {
-                document.getElementById('view-construccion').classList.remove('hidden');
-            }
-        }
+  <!-- Footer -->
+  <footer class="mt-10 text-center text-xs text-gray-400 border-t pt-4">
+    Sistema desarrollado por <span class="font-semibold">Nexus Marketing</span> 📱 0424-4525765 | POS Profesional NOAH SHOP
+  </footer>
+</div>
 
-        // --- 3. MÓDULO VENTAS ---
-        function renderProducts() {
-            const grid = document.getElementById('product-grid');
-            const search = document.getElementById('search-product').value.toLowerCase();
-            grid.innerHTML = '';
+<script>
+  // ------------------------- MODELO DE DATOS Y LOCALSTORAGE -------------------------
+  let DB = {
+    productos: [],      // { id, codigo, nombre, categoria, stock, precio, fechaIngreso, fotoUrl (opcional) }
+    clientes: [],      // { id, nombre, telefono, direccion, direccionRef, historialCompras: [], pagos: [], deudaPendiente }
+    ventas: [],        // { idFactura, numeroFactura, fecha, cliente, productosVendidos, total, metodoPago, vendedor }
+    fiados: [],        // { id, clienteId, clienteNombre, telefono, deudaTotal, deudaRestante, productosDetalle, estado, fechaRegistro, pagosHistorial }
+    proveedores: [],   // { id, nombre, telefono, direccion, comprasRealizadas: [], deudaActual }
+    apartados: [],     // { id, clienteNombre, direccion, telefono, productos, fecha, total, estado }
+    encargos: [],      // { id, fecha, nombre, apellido, telefono, productosPedido, estado }
+    movimientosInventario: [] // { id, articulo, tipo("ingreso"/"egreso"), cantidad, fecha, stockEsperado }
+  };
 
-            db.products.forEach(p => {
-                if(p.name.toLowerCase().includes(search) || p.id.toLowerCase().includes(search)) {
-                    const isLowStock = p.stock <= 6;
-                    const stockClass = isLowStock ? 'text-red-600 font-bold bg-red-100 px-2 rounded' : 'text-gray-600';
-                    const bgBorder = isLowStock ? 'border-red-300' : 'border-gray-200';
+  let nextFacturaNum = 1;
+  let carrito = []; // { productoId, nombre, cantidad, precioUnitario, codigo }
+  let currentVentaCliente = { nombre: "", direccion: "", direccionRef: "", telefono: "" };
+  let vendedorActual = "Administrador";
 
-                    grid.innerHTML += `
-                        <div class="bg-white p-4 rounded-lg shadow-sm border ${bgBorder} flex flex-col justify-between">
-                            <div>
-                                <span class="text-xs text-gray-400 block">${p.id} | ${p.category}</span>
-                                <h3 class="font-bold text-gray-800">${p.name}</h3>
-                                <p class="text-sm mt-1">Stock: <span class="${stockClass}">${p.stock} unds</span></p>
-                                <p class="text-lg font-bold text-green-600 mt-2">$${p.price.toFixed(2)}</p>
-                            </div>
-                            <div class="mt-4 flex gap-2">
-                                <input type="number" id="qty-${p.id}" value="1" min="1" max="${p.stock}" class="w-16 border rounded text-center focus:ring-brand">
-                                <button onclick="addToCart('${p.id}')" class="flex-1 bg-brand text-white rounded hover:bg-blue-800 transition text-sm py-1">
-                                    <i class="fa-solid fa-plus"></i> Agregar
-                                </button>
-                            </div>
-                        </div>
-                    `;
-                }
-            });
-            document.getElementById('ui-correlativo').innerText = `#${db.invoiceCounter.toString().padStart(4, '0')}`;
-        }
+  // Helper: inicializar datos demo
+  function initData() {
+    if(!localStorage.getItem('noah_pos_db')) {
+      const prodDemo = [
+        { id: "p1", codigo: "CAM001", nombre: "Camisa Polo", categoria: "Camisas", stock: 12, precio: 25.00, fechaIngreso: new Date().toISOString() },
+        { id: "p2", codigo: "PAN002", nombre: "Jeans Slim", categoria: "Pantalones", stock: 5, precio: 42.50, fechaIngreso: new Date().toISOString() },
+        { id: "p3", codigo: "CHA003", nombre: "Chaqueta Cuero", categoria: "Chaquetas", stock: 3, precio: 89.99, fechaIngreso: new Date().toISOString() },
+        { id: "p4", codigo: "ZAP004", nombre: "Zapatos Casual", categoria: "Calzado", stock: 8, precio: 55.00, fechaIngreso: new Date().toISOString() }
+      ];
+      DB.productos = prodDemo;
+      DB.clientes = [];
+      DB.ventas = [];
+      DB.fiados = [];
+      DB.proveedores = [];
+      DB.apartados = [];
+      DB.encargos = [];
+      DB.movimientosInventario = prodDemo.map(p => ({ id: crypto.randomUUID(), articulo: p.nombre, tipo: "ingreso", cantidad: p.stock, fecha: new Date().toISOString(), stockEsperado: p.stock }));
+      localStorage.setItem('noah_pos_db', JSON.stringify(DB));
+      localStorage.setItem('nextFacturaNum', '1');
+    } else {
+      Object.assign(DB, JSON.parse(localStorage.getItem('noah_pos_db')));
+    }
+    let storedFactura = localStorage.getItem('nextFacturaNum');
+    if(storedFactura) nextFacturaNum = parseInt(storedFactura);
+    else nextFacturaNum = DB.ventas.length + 1;
+  }
 
-        function addToCart(id) {
-            const product = db.products.find(p => p.id === id);
-            const qtyInput = document.getElementById(`qty-${id}`);
-            const qty = parseInt(qtyInput.value);
+  function saveToLocal() {
+    localStorage.setItem('noah_pos_db', JSON.stringify({ productos: DB.productos, clientes: DB.clientes, ventas: DB.ventas, fiados: DB.fiados, proveedores: DB.proveedores, apartados: DB.apartados, encargos: DB.encargos, movimientosInventario: DB.movimientosInventario }));
+    localStorage.setItem('nextFacturaNum', nextFacturaNum.toString());
+  }
 
-            if (qty > product.stock) {
-                alert(`Stock insuficiente. Solo quedan ${product.stock} unidades.`);
-                return;
-            }
+  // registrar movimiento inventario
+  function registrarMovimiento(articulo, tipo, cantidad, stockEsperado) {
+    DB.movimientosInventario.push({ id: crypto.randomUUID(), articulo, tipo, cantidad, fecha: new Date().toISOString(), stockEsperado });
+    saveToLocal();
+  }
 
-            const existing = db.cart.find(item => item.id === id);
-            if (existing) {
-                if (existing.qty + qty > product.stock) { alert('Excede el stock'); return; }
-                existing.qty += qty;
-            } else {
-                // Hacemos una copia para permitir edición de precio en carrito
-                db.cart.push({ ...product, qty: qty, currentPrice: product.price });
-            }
-            qtyInput.value = 1; // Reset input
-            renderCart();
-        }
+  // actualizar stock producto
+  function ajustarStock(productoId, cantidadCambio, tipoMov) {
+    let prod = DB.productos.find(p => p.id === productoId);
+    if(prod) {
+      let oldStock = prod.stock;
+      prod.stock += cantidadCambio;
+      if(prod.stock < 0) prod.stock = 0;
+      registrarMovimiento(prod.nombre, tipoMov, Math.abs(cantidadCambio), prod.stock);
+      saveToLocal();
+    }
+  }
 
-        function updateCartItem(id, action, newValue = null) {
-            const item = db.cart.find(i => i.id === id);
-            const product = db.products.find(p => p.id === id);
-            
-            if(action === 'add' && item.qty < product.stock) item.qty++;
-            if(action === 'sub' && item.qty > 1) item.qty--;
-            if(action === 'remove') db.cart = db.cart.filter(i => i.id !== id);
-            if(action === 'price' && newValue) item.currentPrice = parseFloat(newValue);
-            
-            renderCart();
-        }
+  // sincronizar cliente
+  function registrarClienteSiNoExiste(nombre, telefono, direccion, direccionRef) {
+    let existente = DB.clientes.find(c => c.telefono === telefono && c.nombre.toLowerCase() === nombre.toLowerCase());
+    if(!existente && nombre.trim() !== "") {
+      let nuevo = { id: crypto.randomUUID(), nombre, telefono, direccion, direccionRef, historialCompras: [], pagos: [], deudaPendiente: 0 };
+      DB.clientes.push(nuevo);
+      saveToLocal();
+      return nuevo;
+    } else if(existente) {
+      if(direccion) existente.direccion = direccion;
+      if(direccionRef) existente.direccionRef = direccionRef;
+      saveToLocal();
+      return existente;
+    }
+    return existente;
+  }
 
-        function renderCart() {
-            const cartContainer = document.getElementById('cart-items');
-            cartContainer.innerHTML = '';
-            let total = 0;
+  // renderizado principal: módulos
+  let currentModule = "ventas";
+  function renderModule(module) {
+    currentModule = module;
+    const container = document.getElementById('contenidoModulo');
+    if(module === 'ventas') renderVentas(container);
+    else if(module === 'almacen') renderAlmacen(container);
+    else if(module === 'fiados') renderFiados(container);
+    else if(module === 'reportes') renderReportes(container);
+    else if(module === 'clientes') renderClientes(container);
+    else if(module === 'proveedores') renderProveedores(container);
+    else if(module === 'apartados') renderApartados(container);
+    else if(module === 'encargos') renderEncargos(container);
+    else if(module === 'inventario') renderInventario(container);
+  }
 
-            db.cart.forEach(item => {
-                const subtotal = item.qty * item.currentPrice;
-                total += subtotal;
-                cartContainer.innerHTML += `
-                    <div class="bg-white p-3 rounded shadow-sm border mb-2 text-sm">
-                        <div class="flex justify-between font-bold text-gray-800">
-                            <span>${item.name}</span>
-                            <button onclick="updateCartItem('${item.id}', 'remove')" class="text-red-400 hover:text-red-600"><i class="fa-solid fa-xmark"></i></button>
-                        </div>
-                        <div class="flex justify-between items-center mt-2">
-                            <div class="flex items-center border rounded">
-                                <button onclick="updateCartItem('${item.id}', 'sub')" class="px-2 bg-gray-100 hover:bg-gray-200">-</button>
-                                <span class="px-2 font-medium">${item.qty}</span>
-                                <button onclick="updateCartItem('${item.id}', 'add')" class="px-2 bg-gray-100 hover:bg-gray-200">+</button>
-                            </div>
-                            <div class="flex items-center gap-1">
-                                <span>$</span>
-                                <input type="number" step="0.5" value="${item.currentPrice}" onchange="updateCartItem('${item.id}', 'price', this.value)" class="w-16 border rounded text-right px-1">
-                            </div>
-                            <span class="font-bold text-brand">$${subtotal.toFixed(2)}</span>
-                        </div>
-                    </div>
-                `;
-            });
-            document.getElementById('cart-total').innerText = total.toFixed(2);
-        }
+  // ------------------- VENTAS (Core) -------------------
+  function renderVentas(container) {
+    let html = `<div class="grid md:grid-cols-2 gap-6"><div><h3 class="font-bold text-xl"><i class="fas fa-search"></i> Productos</h3><input type="text" id="buscadorProductos" class="form-control mb-3" placeholder="Buscar producto..."><div id="listaProductosVentas" class="max-h-96 overflow-y-auto space-y-2"></div></div><div><h3 class="font-bold text-xl">Carrito / Nota de Venta</h3>
+    <div class="bg-gray-50 p-3 rounded-lg"><div class="grid grid-cols-2 gap-2 text-sm"><input type="text" id="facturaNumero" class="form-control" placeholder="N° Factura" value="${nextFacturaNum}"><input type="text" id="clienteNombre" class="form-control" placeholder="Cliente"><input type="text" id="clienteDireccion" placeholder="Dirección"><input type="text" id="clienteDirRef" placeholder="Dirección Referencial"><input type="text" id="clienteTelefono" placeholder="Teléfono WhatsApp"></div>
+    <input type="text" id="vendedorName" class="form-control mt-2" placeholder="Vendedor" value="${vendedorActual}">
+    <select id="metodoPago" class="form-select mt-2"><option>efectivo</option><option>pago móvil</option><option>divisas</option><option>biopago</option><option>transferencia</option><option>fiado crédito</option><option>Binance</option><option>apartado</option></select>
+    <div id="carritoItems" class="mt-3 text-sm max-h-60 overflow-auto"></div>
+    <div class="mt-3 font-bold">Total: $<span id="totalCarrito">0.00</span></div>
+    <div class="flex flex-wrap gap-2 mt-3"><button id="btnAnularVenta" class="btn btn-outline-danger btn-sm"><i class="fas fa-trash-alt"></i> Anular Venta</button><button id="btnConcretarVenta" class="btn btn-primary"><i class="fas fa-check-circle"></i> Concretar Venta</button></div></div></div></div>`;
+    container.innerHTML = html;
+    actualizarListaProductosVentas();
+    actualizarCarritoUI();
+    document.getElementById('buscadorProductos')?.addEventListener('input', () => actualizarListaProductosVentas());
+    document.getElementById('btnAnularVenta')?.addEventListener('click', anularVentaCompleta);
+    document.getElementById('btnConcretarVenta')?.addEventListener('click', concretarVenta);
+    document.getElementById('facturaNumero')?.addEventListener('change', (e) => { let val = parseInt(e.target.value); if(val && !DB.ventas.some(v=>v.numeroFactura===val)) nextFacturaNum=val; else if(DB.ventas.some(v=>v.numeroFactura===val)) alert("Número de factura ya existe, elija otro"); e.target.value=nextFacturaNum; });
+  }
 
-        function clearCart() {
-            if(confirm('¿Seguro que desea anular la venta en curso?')) {
-                db.cart = [];
-                renderCart();
-            }
-        }
+  function actualizarListaProductosVentas() {
+    let search = document.getElementById('buscadorProductos')?.value.toLowerCase() || "";
+    let filtered = DB.productos.filter(p => p.nombre.toLowerCase().includes(search) || p.codigo.toLowerCase().includes(search));
+    let div = document.getElementById('listaProductosVentas');
+    if(div) div.innerHTML = filtered.map(p => `<div class="border p-2 rounded-lg flex justify-between items-center ${p.stock<=6 ? 'bg-red-50' : ''}"><div><span class="font-semibold">${p.nombre}</span> <span class="text-xs text-gray-500">(${p.codigo})</span><div class="text-sm">Stock: <span class="${p.stock<=6?'text-red-600 font-bold':''}">${p.stock}</span> | $${p.precio}</div></div><div class="flex gap-1"><input type="number" id="cant-${p.id}" value="1" class="w-16 form-control form-control-sm"><button class="btn btn-sm btn-outline-primary agregarProducto" data-id="${p.id}" data-precio="${p.precio}" data-nombre="${p.nombre}" data-codigo="${p.codigo}"><i class="fas fa-cart-plus"></i></button></div></div>`).join('');
+    document.querySelectorAll('.agregarProducto').forEach(btn => btn.addEventListener('click', (e) => {
+      let id = btn.dataset.id, precio = parseFloat(btn.dataset.precio), nombre = btn.dataset.nombre, codigo = btn.dataset.codigo;
+      let cantidad = parseInt(document.getElementById(`cant-${id}`)?.value || 1);
+      if(cantidad>0) agregarAlCarrito(id, nombre, cantidad, precio, codigo);
+    }));
+  }
 
-        // --- 4. CHECKOUT Y GENERACIÓN DE FACTURA ---
-        async function processSale() {
-            if (db.cart.length === 0) { alert('El carrito está vacío'); return; }
-            
-            const clientName = document.getElementById('client-name').value;
-            const clientPhone = document.getElementById('client-phone').value;
-            const address = document.getElementById('client-address').value;
-            const total = document.getElementById('cart-total').innerText;
-            const invoiceNum = db.invoiceCounter.toString().padStart(4, '0');
+  function agregarAlCarrito(id, nombre, cantidad, precio, codigo) {
+    let prod = DB.productos.find(p=>p.id===id);
+    if(!prod || prod.stock < cantidad) { alert(`Stock insuficiente. Disponible: ${prod?.stock||0}`); return; }
+    let existente = carrito.find(i=>i.productoId===id);
+    if(existente) existente.cantidad += cantidad;
+    else carrito.push({ productoId: id, nombre, cantidad, precioUnitario: precio, codigo });
+    actualizarCarritoUI();
+  }
 
-            if(!clientName || !clientPhone) { alert('Nombre y WhatsApp son obligatorios'); return; }
+  function actualizarCarritoUI() {
+    let container = document.getElementById('carritoItems');
+    if(!container) return;
+    let total = 0;
+    container.innerHTML = carrito.map((item, idx) => { total += item.cantidad * item.precioUnitario; return `<div class="flex justify-between items-center border-b py-1"><span>${item.nombre} x${item.cantidad}</span><span>$${(item.cantidad*item.precioUnitario).toFixed(2)}</span><div><input type="number" class="w-14 form-control-sm edit-cant" data-idx="${idx}" value="${item.cantidad}"><input type="number" step="0.01" class="w-20 form-control-sm edit-price" data-idx="${idx}" value="${item.precioUnitario}"><button class="btn btn-sm btn-danger remove-item" data-idx="${idx}"><i class="fas fa-times"></i></button></div></div>`; }).join('');
+    document.getElementById('totalCarrito').innerText = total.toFixed(2);
+    document.querySelectorAll('.edit-cant').forEach(inp => inp.addEventListener('change', (e) => { let idx = e.target.dataset.idx; let newCant = parseInt(e.target.value); if(newCant>0) carrito[idx].cantidad = newCant; else carrito.splice(idx,1); actualizarCarritoUI(); }));
+    document.querySelectorAll('.edit-price').forEach(inp => inp.addEventListener('change', (e) => { let idx = e.target.dataset.idx; carrito[idx].precioUnitario = parseFloat(e.target.value); actualizarCarritoUI(); }));
+    document.querySelectorAll('.remove-item').forEach(btn => btn.addEventListener('click', (e) => { let idx = btn.dataset.idx; carrito.splice(idx,1); actualizarCarritoUI(); }));
+  }
 
-            // 1. Preparar DOM oculto para html2canvas
-            document.getElementById('render-invoice-num').innerText = invoiceNum;
-            document.getElementById('render-client').innerText = clientName;
-            document.getElementById('render-address').innerText = address || 'Tienda física';
-            document.getElementById('render-date').innerText = new Date().toLocaleString();
-            document.getElementById('render-total').innerText = total;
-            
-            const tbody = document.getElementById('render-items');
-            tbody.innerHTML = '';
-            db.cart.forEach(item => {
-                tbody.innerHTML += `
-                    <tr style="border-bottom: 1px solid #eee;">
-                        <td style="padding: 5px 0;">${item.qty}</td>
-                        <td>${item.id}<br><small>${item.name}</small></td>
-                        <td>$${item.currentPrice.toFixed(2)}</td>
-                        <td>$${(item.qty * item.currentPrice).toFixed(2)}</td>
-                    </tr>
-                `;
-            });
+  function anularVentaCompleta() {
+    if(carrito.length===0) return;
+    carrito.forEach(item => { ajustarStock(item.productoId, +item.cantidad, "ingreso"); });
+    carrito = [];
+    actualizarCarritoUI();
+    alert("Venta anulada, stock restaurado");
+  }
 
-            // 2. Descontar Stock
-            db.cart.forEach(item => {
-                const product = db.products.find(p => p.id === item.id);
-                product.stock -= item.qty;
-            });
+  async function concretarVenta() {
+    if(carrito.length===0){ alert("Carrito vacío"); return; }
+    let numeroFactura = parseInt(document.getElementById('facturaNumero')?.value);
+    if(DB.ventas.some(v=>v.numeroFactura===numeroFactura)){ alert("Factura duplicada, cambie el número"); return; }
+    let clienteNom = document.getElementById('clienteNombre')?.value.trim() || "Consumidor Final";
+    let telefono = document.getElementById('clienteTelefono')?.value.trim() || "";
+    let direccion = document.getElementById('clienteDireccion')?.value || "";
+    let dirRef = document.getElementById('clienteDirRef')?.value || "";
+    let metodo = document.getElementById('metodoPago')?.value;
+    let vendedor = document.getElementById('vendedorName')?.value || "Admin";
+    let total = carrito.reduce((acc, i)=> acc + (i.cantidad * i.precioUnitario),0);
+    let clienteReg = registrarClienteSiNoExiste(clienteNom, telefono, direccion, dirRef);
+    // Verificar stock final
+    for(let item of carrito) { let prod = DB.productos.find(p=>p.id===item.productoId); if(prod.stock < item.cantidad) { alert(`Stock insuficiente para ${item.nombre}`); return; } }
+    // Descontar stock
+    for(let item of carrito) ajustarStock(item.productoId, -item.cantidad, "egreso");
+    let ventaObj = { idFactura: crypto.randomUUID(), numeroFactura, fecha: new Date().toISOString(), cliente: clienteNom, productosVendidos: carrito.map(i=>({nombre:i.nombre, cantidad:i.cantidad, precio:i.precioUnitario})), total, metodoPago: metodo, vendedor };
+    DB.ventas.push(ventaObj);
+    if(clienteReg) { clienteReg.historialCompras.push(ventaObj); saveToLocal(); }
+    if(metodo === "fiado crédito") {
+      let deudaNueva = { id: crypto.randomUUID(), clienteId: clienteReg?.id || "anon", clienteNombre: clienteNom, telefono, deudaTotal: total, deudaRestante: total, productosDetalle: carrito.map(i=>`${i.nombre} x${i.cantidad}`), estado:"pendiente", fechaRegistro: new Date().toISOString(), pagosHistorial:[] };
+      DB.fiados.push(deudaNueva);
+      if(clienteReg) clienteReg.deudaPendiente = (clienteReg.deudaPendiente||0)+total;
+      saveToLocal();
+    } else if(metodo === "apartado") {
+      let apartado = { id: crypto.randomUUID(), clienteNombre: clienteNom, direccion, telefono, productos: carrito.map(i=>({nombre:i.nombre, cantidad:i.cantidad, precio:i.precioUnitario})), fecha: new Date().toISOString(), total, estado:"apartado" };
+      DB.apartados.push(apartado);
+      saveToLocal();
+    }
+    // Generar factura imagen y whatsapp
+    await generarFacturaImagenYWhatsApp(ventaObj, clienteNom, telefono, total, carrito, numeroFactura);
+    // Limpiar carrito y reset cliente
+    carrito = [];
+    actualizarCarritoUI();
+    document.getElementById('clienteNombre').value = "";
+    document.getElementById('clienteTelefono').value = "";
+    document.getElementById('clienteDireccion').value = "";
+    nextFacturaNum++;
+    document.getElementById('facturaNumero').value = nextFacturaNum;
+    saveToLocal();
+    alert("Venta completada, factura generada");
+  }
 
-            // 3. Generar Imagen de Factura
-            const renderDiv = document.getElementById('render-factura');
-            try {
-                const canvas = await html2canvas(renderDiv, { scale: 2 });
-                const imgData = canvas.toDataURL("image/jpeg", 0.9);
-                
-                // Forzar descarga de la imagen (El API web de WhatsApp no permite enviar imágenes por enlace, el cliente debe adjuntarla)
-                const link = document.createElement('a');
-                link.download = `NotaVenta_NoahShop_${invoiceNum}.jpg`;
-                link.href = imgData;
-                link.click();
+  async function generarFacturaImagenYWhatsApp(ventaObj, cliente, telefono, total, items, numFactura) {
+    let facturaDiv = document.createElement('div');
+    facturaDiv.className = "watermark-factura p-4 bg-white rounded-lg shadow-lg max-w-md";
+    facturaDiv.innerHTML = `<div class="text-center border-b pb-2"><h2 class="font-bold">NOAH SHOP</h2><p>Ropa al detal y mayor<br>Valencia Estado Carabobo<br>Tel: 0412-8517800</p><p>Factura N°: ${numFactura} | Fecha: ${new Date().toLocaleString()}</p></div><div><p><strong>Cliente:</strong> ${cliente} ${telefono? 'Tel: '+telefono:''}</p><p><strong>Vendedor:</strong> ${ventaObj.vendedor}</p><table class="w-full text-sm mt-2"><thead><tr><th>Producto</th><th>Cant</th><th>Precio</th><th>Subtotal</th></tr></thead><tbody>${items.map(i=>`<tr><td>${i.nombre}</td><td>${i.cantidad}</td><td>$${i.precioUnitario.toFixed(2)}</td><td>$${(i.cantidad*i.precioUnitario).toFixed(2)}</td></tr>`).join('')}</tbody></table><div class="text-right font-bold mt-2">Total: $${total.toFixed(2)}</div><div class="text-xs text-center mt-4">Código único: ${ventaObj.idFactura.slice(0,8)}</div></div>`;
+    document.body.appendChild(facturaDiv);
+    let canvas = await html2canvas(facturaDiv, { scale: 2 });
+    let imgData = canvas.toDataURL('image/png');
+    let link = document.createElement('a');
+    link.download = `factura_${numFactura}.png`;
+    link.href = imgData;
+    link.click();
+    if(telefono && telefono.trim() !== "") {
+      let whatsUrl = `https://wa.me/${telefono.replace(/[^0-9]/g, '')}?text=¡Gracias por tu compra en NOAH SHOP! Adjunto tu factura en la imagen descargada. Total: $${total.toFixed(2)}`;
+      window.open(whatsUrl, '_blank');
+    } else alert("Factura generada (imagen descargada). No se pudo abrir WhatsApp sin número.");
+    facturaDiv.remove();
+  }
 
-                // 4. Preparar Mensaje WhatsApp
-                const msg = `*NOAH SHOP - COMPRA EXITOSA* 🛍️\nHola *${clientName}*,\nAdjunto a este chat enviaremos la imagen de su Nota de Venta #${invoiceNum}.\nTotal cancelado: *$${total}*.\n\n¡Gracias por preferirnos!`;
-                const cleanPhone = clientPhone.replace(/\D/g, ''); // Limpiar símbolos
-                const waUrl = `https://wa.me/58${cleanPhone.substring(cleanPhone.length - 10)}?text=${encodeURIComponent(msg)}`;
-                
-                // 5. Finalizar
-                db.invoiceCounter++;
-                saveData();
-                db.cart = [];
-                
-                // Limpiar formulario UI
-                document.getElementById('client-name').value = '';
-                document.getElementById('client-phone').value = '';
-                document.getElementById('client-address').value = '';
-                
-                renderCart();
-                renderProducts(); // Refresca stocks
-                
-                // Abrir WhatsApp en nueva pestaña
-                window.open(waUrl, '_blank');
+  // Almacén, Fiados, etc (abreviado pero funcional)
+  function renderAlmacen(container) { container.innerHTML = `<div><h3><i class="fas fa-warehouse"></i> Gestión Almacén</h3><button class="btn btn-sm btn-success" id="btnAgregarProducto">+ Agregar Producto</button><button class="btn btn-sm btn-info" id="btnDescargarInventarioExcel">📎 Descargar Inventario Excel</button><input type="text" id="filtroCategoria" placeholder="Filtrar por categoría" class="form-control mt-2"><div id="listaProductosAlmacen" class="mt-3"></div></div>`;
+    function cargarProductos() { let filtro = document.getElementById('filtroCategoria')?.value.toLowerCase(); let prods = DB.productos.filter(p=>!filtro||p.categoria.toLowerCase().includes(filtro)); document.getElementById('listaProductosAlmacen').innerHTML = `<table class="table table-sm"><thead><tr><th>Nombre</th><th>Código</th><th>Categoría</th><th>Stock</th><th>Precio $</th><th>Acciones</th></tr></thead><tbody>${prods.map(p=>`<tr><td>${p.nombre}</td><td>${p.codigo}</td><td>${p.categoria}</td><td class="${p.stock<=6?'text-red-600':''}">${p.stock}</td><td>$${p.precio}</td><td><button class="btn btn-sm btn-warning retirarStock" data-id="${p.id}">Retirar</button></td></tr>`).join('')}</tbody></table>`;
+      document.querySelectorAll('.retirarStock').forEach(btn=>btn.addEventListener('click',()=>{ let id=btn.dataset.id; let cant=prompt("Cantidad a retirar (egreso)"); if(cant>0){ ajustarStock(id, -parseInt(cant), "egreso"); cargarProductos(); } }));
+    }
+    document.getElementById('btnAgregarProducto')?.addEventListener('click',()=>{ let nom=prompt("Nombre"); let cat=prompt("Categoría"); let stock=parseInt(prompt("Stock")); let precio=parseFloat(prompt("Precio $")); let newId=crypto.randomUUID(); DB.productos.push({id:newId, codigo:`${nom.slice(0,3)}${Math.floor(Math.random()*1000)}`, nombre:nom, categoria:cat, stock, precio, fechaIngreso:new Date().toISOString()}); registrarMovimiento(nom, "ingreso", stock, stock); saveToLocal(); cargarProductos(); });
+    document.getElementById('btnDescargarInventarioExcel')?.addEventListener('click',()=>{ let ws=XLSX.utils.json_to_sheet(DB.productos.map(p=>({Nombre:p.nombre, Codigo:p.codigo, Categoria:p.categoria, Stock:p.stock, Precio:p.precio}))); let wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,"Inventario"); XLSX.writeFile(wb,"inventario_noah.xlsx"); });
+    document.getElementById('filtroCategoria')?.addEventListener('input',cargarProductos);
+    cargarProductos();
+  }
+  function renderFiados(container) { let deudores = DB.fiados.filter(f=>f.deudaRestante>0); container.innerHTML = `<div><h3>📋 Deudores</h3><button id="descargarFiadosExcel" class="btn btn-sm btn-secondary mb-2">Excel Fiados</button><table class="table"><thead><tr><th>Cliente</th><th>Teléfono</th><th>Deuda Total</th><th>Restante</th><th>Acciones</th></tr></thead><tbody>${deudores.map(f=>`<tr><td>${f.clienteNombre}</td><td>${f.telefono}</td><td>$${f.deudaTotal}</td><td>$${f.deudaRestante}</td><td><button data-id="${f.id}" class="btn btn-sm btn-primary pagarFiado">Pagar</button></td></tr>`).join('')}</tbody></table></div>`;
+    document.querySelectorAll('.pagarFiado').forEach(btn=>btn.addEventListener('click',()=>{ let id=btn.dataset.id; let fiado=DB.fiados.find(f=>f.id===id); let monto=parseFloat(prompt(`Deuda restante $${fiado.deudaRestante}. Monto a pagar:`)); if(monto>0 && monto<=fiado.deudaRestante){ fiado.deudaRestante-=monto; if(fiado.deudaRestante<=0) DB.fiados=DB.fiados.filter(f=>f.id!==id); saveToLocal(); renderFiados(container); } }));
+    document.getElementById('descargarFiadosExcel')?.addEventListener('click',()=>{ let ws=XLSX.utils.json_to_sheet(deudores); let wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,"Fiados"); XLSX.writeFile(wb,"fiados_noah.xlsx"); });
+  }
+  function renderReportes(container) { let ctx = document.createElement('canvas'); let ventasPorDia = {}; DB.ventas.forEach(v=>{ let fecha=v.fecha.split('T')[0]; ventasPorDia[fecha]=(ventasPorDia[fecha]||0)+v.total; }); container.innerHTML = `<div><h3>Reportes y Cierre</h3><canvas id="chartVentas" width="400" height="200"></canvas><button id="excelReporte" class="btn btn-dark mt-2">Descargar Reporte Excel</button></div>`; new Chart(document.getElementById('chartVentas'), { type:'bar', data:{ labels:Object.keys(ventasPorDia), datasets:[{label:'Ventas por día ($)', data:Object.values(ventasPorDia)}] } }); document.getElementById('excelReporte')?.addEventListener('click',()=>{ let ws=XLSX.utils.json_to_sheet(DB.ventas); XLSX.writeFile(XLSX.utils.book_new(),"reporte_ventas.xlsx"); }); }
+  function renderClientes(container) { let searchHtml = `<input id="searchCliente" class="form-control" placeholder="Buscar cliente"><div id="clientesLista"></div>`; container.innerHTML = searchHtml; function cargar() { let search=document.getElementById('searchCliente')?.value.toLowerCase(); let filtered=DB.clientes.filter(c=>c.nombre.toLowerCase().includes(search)); document.getElementById('clientesLista').innerHTML = filtered.map(c=>`<div class="border p-2 my-1 cursor-pointer" data-id="${c.id}"><b>${c.nombre}</b> ${c.telefono} ${c.deudaPendiente>0? `<span class="text-red-600">(Deuda: $${c.deudaPendiente})</span>`:''}</div>`).join(''); document.querySelectorAll('[data-id]').forEach(el=>el.addEventListener('click',()=>{ let cli=DB.clientes.find(c=>c.id===el.dataset.id); alert(`Historial compras: ${cli.historialCompras.length} ventas. Deuda: $${cli.deudaPendiente}`); })); } document.getElementById('searchCliente')?.addEventListener('input',cargar); cargar(); }
+  function renderProveedores(container) { container.innerHTML = `<div><button id="nuevoProveedor" class="btn btn-primary">+ Proveedor</button><div id="listaProveedores"></div></div>`; function cargarProv(){ document.getElementById('listaProveedores').innerHTML = DB.proveedores.map(p=>`<div>${p.nombre} - Deuda: $${p.deudaActual||0} <button class="pagarProv" data-id="${p.id}">Pagar</button></div>`).join(''); document.querySelectorAll('.pagarProv').forEach(b=>b.addEventListener('click',()=>{ let prov=DB.proveedores.find(p=>p.id===b.dataset.id); let pago=parseFloat(prompt("Monto a pagar")); if(pago>0) prov.deudaActual=Math.max(0,(prov.deudaActual||0)-pago); saveToLocal(); cargarProv(); })); } document.getElementById('nuevoProveedor')?.addEventListener('click',()=>{ let nom=prompt("Nombre"); let tel=prompt("Teléfono"); DB.proveedores.push({id:crypto.randomUUID(), nombre:nom, telefono:tel, comprasRealizadas:[], deudaActual:0}); saveToLocal(); cargarProv(); }); cargarProv(); }
+  function renderApartados(container) { let list = DB.apartados.filter(a=>a.estado==="apartado"); container.innerHTML = `<div>${list.map(a=>`<div class="border p-2 mb-2">${a.clienteNombre} - Total: $${a.total} <button class="pagarApartado" data-id="${a.id}">Pagar</button><button class="anularApartado" data-id="${a.id}">Anular</button></div>`).join('')}</div>`; document.querySelectorAll('.pagarApartado').forEach(btn=>btn.addEventListener('click',()=>{ let ap=DB.apartados.find(a=>a.id===btn.dataset.id); ap.estado="pagado"; DB.apartados=DB.apartados.filter(a=>a.id!==ap.id); saveToLocal(); renderApartados(container); alert("Apartado pagado y venta finalizada"); })); document.querySelectorAll('.anularApartado').forEach(btn=>btn.addEventListener('click',()=>{ let ap=DB.apartados.find(a=>a.id===btn.dataset.id); ap.productos.forEach(p=>{ let prod=DB.productos.find(pr=>pr.nombre===p.nombre); if(prod) ajustarStock(prod.id, p.cantidad, "ingreso"); }); DB.apartados=DB.apartados.filter(a=>a.id!==btn.dataset.id); saveToLocal(); renderApartados(container); alert("Apartado anulado, stock devuelto"); })); }
+  function renderEncargos(container) { container.innerHTML = `<div><button id="nuevoEncargo" class="btn btn-success">Nuevo Encargo</button><div id="listaEncargos"></div></div>`; function cargarEncargos(){ document.getElementById('listaEncargos').innerHTML = DB.encargos.map(e=>`<div>${e.nombre} ${e.apellido} - ${e.productosPedido} <button class="concretarEncargo" data-id="${e.id}">Concretar Venta</button><button class="anularEncargo" data-id="${e.id}">Anular</button></div>`).join(''); } document.getElementById('nuevoEncargo')?.addEventListener('click',()=>{ let nombre=prompt("Nombre"); let apellido=prompt("Apellido"); let tel=prompt("Teléfono"); let prod=prompt("Lista productos (ej: Camisa x2)"); DB.encargos.push({id:crypto.randomUUID(), fecha:new Date().toISOString(), nombre, apellido, telefono:tel, productosPedido:prod, estado:"pendiente"}); saveToLocal(); cargarEncargos(); }); cargarEncargos(); }
+  function renderInventario(container) { let movimientos = DB.movimientosInventario; container.innerHTML = `<div><h3>Historial de Movimientos</h3><table class="table table-sm"><thead><tr><th>Artículo</th><th>Tipo</th><th>Cantidad</th><th>Fecha</th><th>Stock Esperado</th></tr></thead><tbody>${movimientos.map(m=>`<tr class="${m.tipo==='ingreso'?'text-blue-600':'text-red-600'}"><td>${m.articulo}</td><td>${m.tipo}</td><td>${m.cantidad}</td><td>${new Date(m.fecha).toLocaleString()}</td><td>${m.stockEsperado}</td></tr>`).join('')}</tbody></table><button id="editarInventarioPass" class="btn btn-warning">Editar movimientos (admin)</button></div>`;
+    document.getElementById('editarInventarioPass')?.addEventListener('click',()=>{ let pass=prompt("Contraseña"); if(pass==="123456") alert("Función de edición habilitada (demo)"); else alert("Contraseña incorrecta"); });
+  }
 
-            } catch (error) {
-                console.error("Error generando factura:", error);
-                alert("Hubo un error generando la factura.");
-            }
-        }
-
-        // --- 5. ALMACÉN Y REPORTES ---
-        function renderAlmacen() {
-            const tbody = document.getElementById('inventory-table');
-            tbody.innerHTML = '';
-            db.products.forEach(p => {
-                tbody.innerHTML += `
-                    <tr>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${p.id}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${p.name}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${p.category}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm ${p.stock <= 6 ? 'text-red-600 font-bold' : 'text-gray-500'}">${p.stock}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">$${p.price.toFixed(2)}</td>
-                    </tr>
-                `;
-            });
-        }
-
-        function downloadExcel(type) {
-            if(type === 'almacen') {
-                const ws = XLSX.utils.json_to_sheet(db.products);
-                const wb = XLSX.utils.book_new();
-                XLSX.utils.book_append_sheet(wb, ws, "Stock");
-                XLSX.writeFile(wb, `NoahShop_Almacen_${new Date().toLocaleDateString()}.xlsx`);
-            }
-        }
-
-        // Initialize
-        renderProducts();
-    </script>
+  // eventos de navegación
+  document.querySelectorAll('.modulo-btn').forEach(btn => {
+    btn.addEventListener('click', () => { renderModule(btn.dataset.modulo); });
+  });
+  initData();
+  renderModule('ventas');
+</script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
